@@ -99,12 +99,25 @@ const String startRoutineButton = 'START ROUTINE';
 const String eveningLoadNotSet = 'Evening Load: Not Set';
 const String eveningLoadSubtitle = "Tap to prepare tomorrow's lines";
 
+class SubStep {
+  final String title;
+  final String instruction;
+  final int durationSeconds;
+
+  const SubStep({
+    required this.title,
+    required this.instruction,
+    required this.durationSeconds,
+  });
+}
+
 class BlockConfig {
   final String id;
   final String name;
   final int durationMinutes;
   final String tag;
   final String description;
+  final List<SubStep>? subSteps;
 
   const BlockConfig({
     required this.id,
@@ -112,16 +125,39 @@ class BlockConfig {
     required this.durationMinutes,
     required this.tag,
     required this.description,
+    this.subSteps,
   });
 }
 
 const List<BlockConfig> kRoutineBlocks = [
   BlockConfig(
     id: 'blockBreath',
-    name: 'Breath Fundamentals',
+    name: 'Breath Lab',
     durationMinutes: 10,
     tag: 'BREATH',
-    description: 'Diaphragmatic breathing, rib expansion, and breath control. The foundation for voice work and emotional access. Focus on deep, silent inhalation and controlled exhalation.',
+    description: 'Four-stage breath instrument: diaphragmatic, rib expansion, control, and silent inhalation. The foundation for voice and emotional access.',
+    subSteps: [
+      SubStep(
+        title: 'Diaphragmatic Breathing',
+        instruction: 'Place one hand on your belly, one on your chest. Breathe so only the belly hand moves. Complete 10 silent cycles.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Rib Expansion',
+        instruction: 'Shift focus to lateral expansion of the lower ribs. Feel the intercostals stretch on inhale. 10 cycles.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Breath Control',
+        instruction: 'Inhale for 4 counts. Hold for 4. Exhale for 6. Extend the exhale by 1 count each round until you reach 10.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Silent Inhalation',
+        instruction: 'Breathe so quietly that someone beside you would not know you are breathing. 10 cycles. No sound on inhale or exhale.',
+        durationSeconds: 150,
+      ),
+    ],
   ),
   BlockConfig(
     id: 'blockBody',

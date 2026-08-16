@@ -60,7 +60,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 16c: Session Screen rendered from kRoutineBlocks and screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 17a: Breath Lab SubSteps and Session screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -98,37 +98,23 @@ void main() {
       });
     }
 
-    // 1. Tap START ROUTINE from Today
+    // 1. Start Session from Today
     await tester.tap(find.text(startRoutineButton));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
+    // Verify Block 1 Step 1: Diaphragmatic Breathing
     expect(find.text('SESSION'), findsOneWidget);
     expect(find.text('BLOCK 1 OF 9'), findsOneWidget);
-    expect(find.text('Breath Fundamentals'), findsOneWidget);
-    expect(find.text('10:00'), findsOneWidget);
-    expect(find.text('UP NEXT'), findsOneWidget);
-    expect(find.text('Physical Warm-up'), findsOneWidget);
+    expect(find.text('Diaphragmatic Breathing'), findsOneWidget);
+    expect(find.text('STEP 1 OF 4'), findsOneWidget);
+    expect(
+      find.text('Place one hand on your belly, one on your chest. Breathe so only the belly hand moves. Complete 10 silent cycles.'),
+      findsOneWidget,
+    );
+    expect(find.text('02:30'), findsOneWidget);
 
-    // Capture Session Screen
-    await captureScreen('session_screen.png');
-
-    // 2. Skip through blocks to block 9
-    for (int i = 1; i <= 8; i++) {
-      await tester.tap(find.byIcon(Icons.skip_next));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-
-    expect(find.text('BLOCK 9 OF 9'), findsOneWidget);
-    expect(find.text('Integration & Cool-down'), findsOneWidget);
-
-    // 3. Complete session
-    await tester.tap(find.byIcon(Icons.check));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('ROUTINE COMPLETE'), findsOneWidget);
-    expect(find.text('BACK TO TODAY'), findsOneWidget);
+    // Capture screenshot on Block 1, Step 1
+    await captureScreen('session_breath_lab_step1.png');
   });
 }

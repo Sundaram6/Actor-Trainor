@@ -18,6 +18,7 @@ class SessionScreen extends ConsumerStatefulWidget {
 
 class _SessionScreenState extends ConsumerState<SessionScreen> {
   late int _currentIndex;
+  int _subStepIndex = 0;
   int _secondsRemaining = 0;
   Timer? _timer;
   bool _isRunning = false;
@@ -27,6 +28,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     super.initState();
     _currentIndex = widget.startBlockIndex;
     _secondsRemaining = kRoutineBlocks[_currentIndex].durationMinutes * 60;
+    if (kRoutineBlocks[_currentIndex].subSteps != null) {
+      _subStepIndex = 0;
+      _secondsRemaining = kRoutineBlocks[_currentIndex].subSteps![0].durationSeconds;
+    }
   }
 
   void _toggleTimer() {
@@ -38,9 +43,14 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         if (_secondsRemaining > 0) {
           setState(() => _secondsRemaining--);
         } else {
-          _timer?.cancel();
-          setState(() => _isRunning = false);
-          if (_currentIndex < kRoutineBlocks.length - 1) {
+          final block = kRoutineBlocks[_currentIndex];
+          final hasSubSteps = block.subSteps != null;
+          if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
+            setState(() {
+              _subStepIndex++;
+              _secondsRemaining = block.subSteps![_subStepIndex].durationSeconds;
+            });
+          } else if (_currentIndex < kRoutineBlocks.length - 1) {
             _nextBlock();
           } else {
             _onSessionComplete();
@@ -57,7 +67,11 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     if (_currentIndex < kRoutineBlocks.length - 1) {
       setState(() {
         _currentIndex++;
-        _secondsRemaining = kRoutineBlocks[_currentIndex].durationMinutes * 60;
+        _subStepIndex = 0;
+        final block = kRoutineBlocks[_currentIndex];
+        _secondsRemaining = block.subSteps != null
+            ? block.subSteps![0].durationSeconds
+            : block.durationMinutes * 60;
         _isRunning = false;
       });
     }
@@ -115,7 +129,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final total = kRoutineBlocks.fold<int>(0, (s, b) => s + b.durationMinutes);
     final elapsedMins = kRoutineBlocks.sublist(0, _currentIndex).fold<int>(0, (s, b) => s + b.durationMinutes) +
         ((current.durationMinutes * 60 - _secondsRemaining) ~/ 60);
-    final progress = elapsedMins / total;
+    final progress = total > 0 ? elapsedMins / total : 0.0;
     final isLastBlock = _currentIndex == kRoutineBlocks.length - 1;
 
     return Scaffold(
@@ -151,7 +165,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
               'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
               style: AppTextStyles.caption,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             Container(
               width: 80,
               height: 80,
@@ -171,15 +185,38 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              current.name,
+              current.subSteps != null
+                  ? current.subSteps![_subStepIndex].title
+                  : current.name,
               style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              '${current.durationMinutes} MINUTES',
+              current.subSteps != null
+                  ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
+                  : '${current.durationMinutes} MINUTES',
               style: AppTextStyles.caption,
             ),
-            const SizedBox(height: 48),
+            if (current.subSteps != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Text(
+                  current.subSteps![_subStepIndex].instruction,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
             Text(
               _timeText,
               style: AppTextStyles.h1.copyWith(
@@ -187,7 +224,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -202,7 +239,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
             if (!isLastBlock) ...[
               const Align(
                 alignment: Alignment.centerLeft,
