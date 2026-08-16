@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-08-16
+
+### Deep Exercise Mechanics & Dedicated Session Completion
+
+#### Added
+- **Single Source of Truth (`kRoutineBlocks`) (Micro-Phases 16a–16c)**
+  - Unified routine configuration and metadata in `lib/core/constants.dart`.
+  - Wired Routine screen, Block Detail screen, and Session timer engine to consume `kRoutineBlocks`.
+- **Guided Exercise Sub-Steps & Live Instructions (Micro-Phases 17a–18d)**
+  - **Breath Lab (Block 1)**: 4 guided sub-steps (Diaphragmatic Breathing, Rib Expansion, Breath Control, Silent Inhalation).
+  - **Emotional Preparation (Block 5)**: 3-step Adler given circumstances vs. Strasberg affective memory sequence + exit ritual.
+  - **Continuity of Thought (Block 6)**: 3-stage stream-of-consciousness, dual awareness, and character entry internal monologue.
+  - **Character Embodiment (Block 7)**: 3-stage physical center/gait, vocal texture/rhythm, and full integration.
+  - **Cold Reading / Text Work (Block 8)**: 3-stage first impulse cold take, script scoring/subtext, and text living integration.
+  - **Integration & Cool-down (Block 9)**: 3-stage de-roling grounding, silent reflection, and releasing breaths.
+- **Dedicated Session Completion Screen (Micro-Phase 19)**
+  - Created `SessionCompletionScreen` featuring gold checkmark, blocks completed card (`9 / 9`), total duration card (`98 min`), and closed status.
+  - "Return to Dashboard" action clearing back-stack and refreshing Riverpod stats providers.
+
+---
+
 ## [1.0.0] - 2026-08-16
 
 ### Initial Release - Full Local Actor Training Companion
