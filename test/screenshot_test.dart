@@ -60,7 +60,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 18c: Cold Reading / Text Work 3-Step Sequence screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 18d: Integration & Cool-down 3-Step Sequence screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -77,7 +77,7 @@ void main() {
           debugShowCheckedModeBanner: false,
           home: RepaintBoundary(
             key: boundaryKey,
-            child: const SessionScreen(startBlockIndex: 7), // Block 8 (0-indexed)
+            child: const SessionScreen(startBlockIndex: 8), // Block 9 (0-indexed)
           ),
         ),
       ),
@@ -101,20 +101,19 @@ void main() {
       });
     }
 
-    // Verify Block 8 Step 1: Cold Take — First Encounter
+    // Verify Block 9 Step 1: De-roling & Grounding
     expect(find.text('SESSION'), findsOneWidget);
-    expect(find.text('BLOCK 8 OF ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('Cold Take — First Encounter'), findsOneWidget);
+    expect(find.text('BLOCK 9 OF ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('De-roling & Grounding'), findsOneWidget);
     expect(find.text('STEP 1 OF 3'), findsOneWidget);
     expect(
-      find.text('Read the text aloud for the first time. No preparation. No rehearsal voice. Notice where your breath catches. Notice where you rush. Notice what you want as you speak. Do not judge the read. The first impulse is often the truest.'),
+      find.text('Shake the entire body from the feet up. Stamp the feet hard on the floor three times. Say your own name aloud. Touch your face, your hair, your clothes. Remind the body who it belongs to. The character lives in the work, not in your life.'),
       findsOneWidget,
     );
     expect(find.text('03:00'), findsOneWidget);
-    expect(find.text('UP NEXT'), findsOneWidget);
-    expect(find.text('Integration & Cool-down'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget); // Completion button on last block
 
-    // Capture screenshot on Block 8, Step 1
-    await captureScreen('session_cold_read_step1.png');
+    // Capture screenshot on Block 9, Step 1
+    await captureScreen('session_integration_step1.png');
   });
 }

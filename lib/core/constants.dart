@@ -279,8 +279,25 @@ const List<BlockConfig> kRoutineBlocks = [
   BlockConfig(
     id: 'blockIntegration',
     name: 'Integration & Cool-down',
-    durationMinutes: 10,
-    tag: 'INTEGRATION',
-    description: 'Breath reset, reflection, and journaling. Consolidates the work and releases tension. Leave the character in the room, take the learning with you.',
+    durationMinutes: 8,
+    tag: 'CLOSE',
+    description: 'Close the session. Ground the body, reflect on the work, and release the day. Leave the studio empty. Return to yourself.',
+    subSteps: [
+      SubStep(
+        title: 'De-roling & Grounding',
+        instruction: 'Shake the entire body from the feet up. Stamp the feet hard on the floor three times. Say your own name aloud. Touch your face, your hair, your clothes. Remind the body who it belongs to. The character lives in the work, not in your life.',
+        durationSeconds: 180,
+      ),
+      SubStep(
+        title: 'Reflection — What Lived?',
+        instruction: 'Sit in silence. What landed today? Not what was good or bad — what was alive. Which moment surprised you? Which impulse did you follow? Which did you shut down? Write one sentence in your mind. No judgment. Just witness.',
+        durationSeconds: 180,
+      ),
+      SubStep(
+        title: 'Release & Close',
+        instruction: 'Take five slow breaths. On each exhale, let something go — tension, expectation, the scene, the character. The last exhale is the door closing. Stand up. The work is done. Walk away. Do not carry it.',
+        durationSeconds: 180,
+      ),
+    ],
   ),
 ];
