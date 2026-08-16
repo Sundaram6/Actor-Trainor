@@ -46,6 +46,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
           final block = kRoutineBlocks[_currentIndex];
           final hasSubSteps = block.subSteps != null;
           if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
+            ref.read(soundServiceProvider).playTransitionTone();
             setState(() {
               _subStepIndex++;
               _secondsRemaining = block.subSteps![_subStepIndex].durationSeconds;
@@ -62,7 +63,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   }
 
   void _nextBlock() {
-    SoundService.playBell();
+    ref.read(soundServiceProvider).playTransitionTone();
     _timer?.cancel();
     if (_currentIndex < kRoutineBlocks.length - 1) {
       setState(() {
@@ -78,7 +79,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   }
 
   Future<void> _onSessionComplete() async {
-    SoundService.playBell();
+    ref.read(soundServiceProvider).playCompletionTone();
     _timer?.cancel();
     final db = ref.read(databaseProvider);
     final now = DateTime.now();

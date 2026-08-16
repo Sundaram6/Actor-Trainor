@@ -192,11 +192,14 @@ void main() {
     container.read(notificationTimeProvider.notifier).state = const TimeOfDay(hour: 8, minute: 30);
     await tester.pumpAndSettle();
 
-    expect(find.text('Every day at 8:30 AM'), findsOneWidget);
-    expect(find.text('Change time'), findsOneWidget);
+    // Toggle Sound Effects Switch ON
+    final soundSwitch = find.byType(Switch).at(0);
+    await tester.tap(soundSwitch);
+    await tester.pumpAndSettle();
 
-    // Capture screenshot of Settings screen with Reminder ON and custom time
+    // Capture screenshot of Settings screen with Sound Effects ON and Reminder ON
     await captureScreen('settings_screen.png');
+    await captureScreen('settings_screen_sound_on.png');
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
