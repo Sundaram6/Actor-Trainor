@@ -6,7 +6,7 @@ import '../core/constants.dart';
 import '../providers/database_provider.dart';
 import '../database/database.dart';
 import '../services/sound_service.dart';
-import 'session_complete_screen.dart';
+import 'session_completion_screen.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
   final int startBlockIndex;
@@ -102,7 +102,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => SessionCompleteScreen(
+          builder: (_) => SessionCompletionScreen(
             totalMinutes: totalMinutes,
             blocksCompleted: 9,
           ),

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/session_completion_screen.dart';
 import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
@@ -60,7 +61,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 18d: Integration & Cool-down 3-Step Sequence screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 19: Session Completion Screen screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -77,7 +78,10 @@ void main() {
           debugShowCheckedModeBanner: false,
           home: RepaintBoundary(
             key: boundaryKey,
-            child: const SessionScreen(startBlockIndex: 8), // Block 9 (0-indexed)
+            child: const SessionCompletionScreen(
+              totalMinutes: 98,
+              blocksCompleted: 9,
+            ),
           ),
         ),
       ),
@@ -101,19 +105,49 @@ void main() {
       });
     }
 
-    // Verify Block 9 Step 1: De-roling & Grounding
-    expect(find.text('SESSION'), findsOneWidget);
-    expect(find.text('BLOCK 9 OF ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('De-roling & Grounding'), findsOneWidget);
-    expect(find.text('STEP 1 OF 3'), findsOneWidget);
-    expect(
-      find.text('Shake the entire body from the feet up. Stamp the feet hard on the floor three times. Say your own name aloud. Touch your face, your hair, your clothes. Remind the body who it belongs to. The character lives in the work, not in your life.'),
-      findsOneWidget,
-    );
-    expect(find.text('03:00'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsOneWidget); // Completion button on last block
+    // Verify Session Completion Screen
+    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    expect(find.text('SESSION COMPLETE'), findsOneWidget);
+    expect(find.text('The work is done. Leave it in the room.'), findsOneWidget);
+    expect(find.text('Blocks Completed'), findsOneWidget);
+    expect(find.text('9 / ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('Total Time'), findsOneWidget);
+    expect(find.text('98 min'), findsOneWidget);
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Closed'), findsOneWidget);
+    expect(find.text('RETURN TO DASHBOARD'), findsOneWidget);
 
-    // Capture screenshot on Block 9, Step 1
-    await captureScreen('session_integration_step1.png');
+    // Capture screenshot
+    await captureScreen('session_completion_screen.png');
+  });
+
+  testWidgets('SessionScreen navigates to SessionCompletionScreen on completion', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: SessionScreen(startBlockIndex: 8), // Last block
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Tap complete button (check icon)
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Should navigate to SessionCompletionScreen
+    expect(find.byType(SessionCompletionScreen), findsOneWidget);
+    expect(find.text('SESSION COMPLETE'), findsOneWidget);
   });
 }
