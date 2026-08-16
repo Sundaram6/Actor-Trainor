@@ -12,8 +12,11 @@ import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
+import 'package:the_instrument/screens/settings_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
   // Load Roboto font family
@@ -49,6 +52,12 @@ void main() {
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({
+      'soundEnabled': false,
+      'notificationEnabled': false,
+      'notificationHour': 7,
+      'notificationMinute': 0,
+    });
     await loadRealFonts();
     SoundService.enabled = false;
     NotificationService.enabled = false;
@@ -62,7 +71,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 21: Progress Tab Session History and Persistence Flow', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 22: Settings Screen Sound and Reminders Flow', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -159,7 +168,37 @@ void main() {
     // Capture screenshot of Progress screen
     await captureScreen('progress_screen.png');
 
-    await tester.pumpWidget(const SizedBox());
+    // 4. Navigate to Settings tab in BottomNavigationBar
+    await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
+
+    // Verify SettingsScreen renders sections
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.text('SETTINGS'), findsOneWidget);
+    expect(find.text('SESSION'), findsOneWidget);
+    expect(find.text('REMINDERS'), findsOneWidget);
+    expect(find.text('DATA'), findsOneWidget);
+    expect(find.text('Sound Effects'), findsOneWidget);
+    expect(find.text('Daily Reminder'), findsOneWidget);
+    expect(find.text('Reset All Progress'), findsOneWidget);
+
+    // Toggle Reminder Switch ON
+    final reminderSwitch = find.byType(Switch).at(1);
+    await tester.tap(reminderSwitch);
+    await tester.pumpAndSettle();
+
+    // Set custom time 08:30 AM in Provider
+    final container = ProviderScope.containerOf(tester.element(find.byType(SettingsScreen)));
+    container.read(notificationTimeProvider.notifier).state = const TimeOfDay(hour: 8, minute: 30);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Every day at 8:30 AM'), findsOneWidget);
+    expect(find.text('Change time'), findsOneWidget);
+
+    // Capture screenshot of Settings screen with Reminder ON and custom time
+    await captureScreen('settings_screen.png');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
   });
 }
