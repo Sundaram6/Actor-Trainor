@@ -231,9 +231,26 @@ const List<BlockConfig> kRoutineBlocks = [
   BlockConfig(
     id: 'blockCharacter',
     name: 'Character Embodiment',
-    durationMinutes: 12,
+    durationMinutes: 10,
     tag: 'CHARACTER',
-    description: 'Physical transformation, center of gravity shifts, and character walk. Embodies the role physically before intellectualizing it. Find the body first.',
+    description: 'Transform your instrument into the character. Three stages: physical center, vocal texture, and full integration. Do not imitate — inhabit.',
+    subSteps: [
+      SubStep(
+        title: 'Physical Center & Gait',
+        instruction: 'Find your character\'s center of gravity. Do they lead from the chest (proud), the gut (heavy), the head (anxious), or the pelvis (sensual)? Walk the room. Change the speed. Where do they hold tension? Do not act — let the body discover the psychology.',
+        durationSeconds: 180,
+      ),
+      SubStep(
+        title: 'Vocal Texture & Rhythm',
+        instruction: 'Speak a neutral sentence in your character\'s voice. Notice pitch, pace, and where the breath sits. Is the voice placed forward (sharp) or back (muffled)? Does the character breathe high (anxious) or low (grounded)? Experiment. Do not perform — interrogate.',
+        durationSeconds: 180,
+      ),
+      SubStep(
+        title: 'Full Integration',
+        instruction: 'Walk and speak simultaneously as the character. Not the scene — just the being. Greet an imaginary person. Sit down. Stand up. Let the physical and vocal choices collide and settle. If something feels false, drop it. Keep what lives.',
+        durationSeconds: 240,
+      ),
+    ],
   ),
   BlockConfig(
     id: 'blockColdRead',

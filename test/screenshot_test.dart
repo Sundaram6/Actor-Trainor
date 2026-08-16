@@ -60,7 +60,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 18a: Continuity of Thought 3-Step Sequence screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 18b: Character Embodiment 3-Step Sequence screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -77,7 +77,7 @@ void main() {
           debugShowCheckedModeBanner: false,
           home: RepaintBoundary(
             key: boundaryKey,
-            child: const SessionScreen(startBlockIndex: 5), // Block 6 (0-indexed)
+            child: const SessionScreen(startBlockIndex: 6), // Block 7 (0-indexed)
           ),
         ),
       ),
@@ -101,20 +101,20 @@ void main() {
       });
     }
 
-    // Verify Block 6 Step 1: Stream of Consciousness
+    // Verify Block 7 Step 1: Physical Center & Gait
     expect(find.text('SESSION'), findsOneWidget);
-    expect(find.text('BLOCK 6 OF ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('Stream of Consciousness'), findsOneWidget);
+    expect(find.text('BLOCK 7 OF ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('Physical Center & Gait'), findsOneWidget);
     expect(find.text('STEP 1 OF 3'), findsOneWidget);
     expect(
-      find.text('Speak every thought that crosses your mind. No censorship. No shaping for an audience. If you go blank, say "I am blank" until the next thought arrives. Do not judge the content. The goal is flow, not poetry.'),
+      find.text('Find your character\'s center of gravity. Do they lead from the chest (proud), the gut (heavy), the head (anxious), or the pelvis (sensual)? Walk the room. Change the speed. Where do they hold tension? Do not act — let the body discover the psychology.'),
       findsOneWidget,
     );
     expect(find.text('03:00'), findsOneWidget);
     expect(find.text('UP NEXT'), findsOneWidget);
-    expect(find.text('Character Embodiment'), findsOneWidget);
+    expect(find.text('Cold Reading / Text Work'), findsOneWidget);
 
-    // Capture screenshot on Block 6, Step 1
-    await captureScreen('session_continuity_step1.png');
+    // Capture screenshot on Block 7, Step 1
+    await captureScreen('session_character_step1.png');
   });
 }
