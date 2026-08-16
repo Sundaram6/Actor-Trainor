@@ -10,6 +10,7 @@ import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/block_detail_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 
@@ -60,7 +61,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 14: Settings Daily Reminders toggle verification and screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 16b: Routine tab rendered from kRoutineBlocks and screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -98,32 +99,27 @@ void main() {
       });
     }
 
-    // 1. Navigate to Settings tab
-    await tester.tap(find.text(tabSettings));
+    // 1. Navigate to Routine tab
+    await tester.tap(find.text(tabRoutine));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('SETTINGS'), findsOneWidget);
-    expect(find.text('PREFERENCES'), findsOneWidget);
-    expect(find.text('Daily Reminders'), findsOneWidget);
-    expect(find.text('Sound Cues'), findsOneWidget);
-    expect(find.text('ABOUT'), findsOneWidget);
-    expect(find.text('DATA'), findsOneWidget);
+    expect(find.text('ROUTINE'), findsOneWidget);
+    expect(find.text('112 MINUTES • 9 BLOCKS'), findsOneWidget);
+    expect(find.text('Breath Fundamentals'), findsOneWidget);
+    expect(find.text('Physical Warm-up'), findsOneWidget);
+    expect(find.text('Memory Foundation'), findsOneWidget);
 
-    // Verify Daily Reminders switch state
-    final switchFinder = find.byType(Switch).first;
-    expect(tester.widget<Switch>(switchFinder).value, true);
+    // Capture screenshot of Routine Tab
+    await captureScreen('routine_tab.png');
 
-    // Toggle switch OFF then ON
-    await tester.tap(switchFinder);
+    // 2. Tap block -> BlockDetailScreen opens
+    await tester.tap(find.text('Memory Foundation'));
     await tester.pump();
-    expect(tester.widget<Switch>(switchFinder).value, false);
+    await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.tap(switchFinder);
-    await tester.pump();
-    expect(tester.widget<Switch>(switchFinder).value, true);
-
-    // Capture Settings screen with Daily Reminders ON
-    await captureScreen('settings_reminders_on.png');
+    expect(find.byType(BlockDetailScreen), findsOneWidget);
+    expect(find.text('ABOUT THIS BLOCK'), findsOneWidget);
+    expect(find.text('START FROM THIS BLOCK'), findsOneWidget);
   });
 }

@@ -98,3 +98,85 @@ const String morningRoutineNotStarted = 'MORNING ROUTINE: NOT STARTED';
 const String startRoutineButton = 'START ROUTINE';
 const String eveningLoadNotSet = 'Evening Load: Not Set';
 const String eveningLoadSubtitle = "Tap to prepare tomorrow's lines";
+
+class BlockConfig {
+  final String id;
+  final String name;
+  final int durationMinutes;
+  final String tag;
+  final String description;
+
+  const BlockConfig({
+    required this.id,
+    required this.name,
+    required this.durationMinutes,
+    required this.tag,
+    required this.description,
+  });
+}
+
+const List<BlockConfig> kRoutineBlocks = [
+  BlockConfig(
+    id: 'blockBreath',
+    name: 'Breath Fundamentals',
+    durationMinutes: 10,
+    tag: 'BREATH',
+    description: 'Diaphragmatic breathing, rib expansion, and breath control. The foundation for voice work and emotional access. Focus on deep, silent inhalation and controlled exhalation.',
+  ),
+  BlockConfig(
+    id: 'blockBody',
+    name: 'Physical Warm-up',
+    durationMinutes: 10,
+    tag: 'BODY',
+    description: 'Joint rotations, spine alignment, and body awareness. Prevents injury and centers physical presence. Move from the extremities toward the core.',
+  ),
+  BlockConfig(
+    id: 'blockMemory',
+    name: 'Memory Foundation',
+    durationMinutes: 15,
+    tag: 'MEMORY',
+    description: 'Sense memory exercises and personal object recall. Builds the actor\'s sensory instrument. Recall a specific smell, texture, or sound with full sensory detail.',
+  ),
+  BlockConfig(
+    id: 'blockVoice',
+    name: 'Voice & Resonance',
+    durationMinutes: 15,
+    tag: 'VOICE',
+    description: 'Vocal warm-ups, articulation drills, and resonance placement. Frees the natural voice. Work through lip trills, tongue twisters, and pitch variation.',
+  ),
+  BlockConfig(
+    id: 'blockEmotion',
+    name: 'Emotional Preparation',
+    durationMinutes: 12,
+    tag: 'EMOTION',
+    description: 'Private moment, emotional recall, and "as-if" exercises. Accesses truthful feeling without forcing emotion. Allow the body to respond naturally to the stimulus.',
+  ),
+  BlockConfig(
+    id: 'blockContinuity',
+    name: 'Continuity of Thought',
+    durationMinutes: 15,
+    tag: 'MIND',
+    description: 'Stream of consciousness and inner monologue work. Maintains active listening and a continuous thought line. Never let the mind go blank between lines.',
+  ),
+  BlockConfig(
+    id: 'blockCharacter',
+    name: 'Character Embodiment',
+    durationMinutes: 12,
+    tag: 'CHARACTER',
+    description: 'Physical transformation, center of gravity shifts, and character walk. Embodies the role physically before intellectualizing it. Find the body first.',
+  ),
+  BlockConfig(
+    id: 'blockColdRead',
+    name: 'Cold Reading / Text Work',
+    durationMinutes: 13,
+    tag: 'TEXT',
+    description: 'Sight-reading, script analysis, and scoring. Develops text handling skills under pressure. Look for operative words and beats in the scene.',
+  ),
+  BlockConfig(
+    id: 'blockIntegration',
+    name: 'Integration & Cool-down',
+    durationMinutes: 10,
+    tag: 'INTEGRATION',
+    description: 'Breath reset, reflection, and journaling. Consolidates the work and releases tension. Leave the character in the room, take the learning with you.',
+  ),
+];
