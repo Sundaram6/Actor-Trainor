@@ -192,7 +192,39 @@ const List<BlockConfig> kRoutineBlocks = [
     name: 'Continuity of Thought',
     durationMinutes: 15,
     tag: 'MIND',
-    description: 'Stream of consciousness and inner monologue work. Maintains active listening and a continuous thought line. Never let the mind go blank between lines.',
+    description: 'Six-anchor continuity game. Hold a continuous stream of consciousness while weaving in concrete sensory images. Do not let the mind go blank between anchors.',
+    subSteps: [
+      SubStep(
+        title: 'Anchor 1 — The Red Door',
+        instruction: 'A red door you have never opened. Keep talking. Do not stop. Let the image lead you.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Anchor 2 — Mother\'s Voice',
+        instruction: 'The sound of your mother saying your name. Weave it into the stream without breaking the thread.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Anchor 3 — Rain on Asphalt',
+        instruction: 'The smell of rain on hot asphalt. Stay in the stream. Let the sensory memory carry the thought forward.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Anchor 4 — Stone in Palm',
+        instruction: 'The weight of a cold stone in your palm. Keep the monologue alive. No blanks.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Anchor 5 — Empty Room Clock',
+        instruction: 'A clock ticking in an empty room. Maintain continuity. The thought must not die.',
+        durationSeconds: 150,
+      ),
+      SubStep(
+        title: 'Anchor 6 — Childhood Taste',
+        instruction: 'The taste of something you loved as a child. Ride it to the end. Finish the 15 minutes unbroken.',
+        durationSeconds: 150,
+      ),
+    ],
   ),
   BlockConfig(
     id: 'blockCharacter',

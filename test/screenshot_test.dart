@@ -10,6 +10,7 @@ import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 
@@ -60,7 +61,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 17a: Breath Lab SubSteps and Session screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 17b: Continuity of Thought 6-Anchor Game screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -73,9 +74,12 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(testDb),
         ],
-        child: RepaintBoundary(
-          key: boundaryKey,
-          child: const TheInstrumentApp(),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: RepaintBoundary(
+            key: boundaryKey,
+            child: const SessionScreen(startBlockIndex: 5), // Block 6 (0-indexed)
+          ),
         ),
       ),
     );
@@ -98,23 +102,20 @@ void main() {
       });
     }
 
-    // 1. Start Session from Today
-    await tester.tap(find.text(startRoutineButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    // Verify Block 1 Step 1: Diaphragmatic Breathing
+    // Verify Block 6 Step 1: Anchor 1 — The Red Door
     expect(find.text('SESSION'), findsOneWidget);
-    expect(find.text('BLOCK 1 OF 9'), findsOneWidget);
-    expect(find.text('Diaphragmatic Breathing'), findsOneWidget);
-    expect(find.text('STEP 1 OF 4'), findsOneWidget);
+    expect(find.text('BLOCK 6 OF 9'), findsOneWidget);
+    expect(find.text('Anchor 1 — The Red Door'), findsOneWidget);
+    expect(find.text('STEP 1 OF 6'), findsOneWidget);
     expect(
-      find.text('Place one hand on your belly, one on your chest. Breathe so only the belly hand moves. Complete 10 silent cycles.'),
+      find.text('A red door you have never opened. Keep talking. Do not stop. Let the image lead you.'),
       findsOneWidget,
     );
     expect(find.text('02:30'), findsOneWidget);
+    expect(find.text('UP NEXT'), findsOneWidget);
+    expect(find.text('Character Embodiment'), findsOneWidget);
 
-    // Capture screenshot on Block 1, Step 1
-    await captureScreen('session_breath_lab_step1.png');
+    // Capture screenshot on Block 6, Anchor 1
+    await captureScreen('session_continuity_anchor1.png');
   });
 }
