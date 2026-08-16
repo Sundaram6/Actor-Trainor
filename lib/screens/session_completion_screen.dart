@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' as drift;
 import '../app.dart';
 import '../core/constants.dart';
+import '../database/database.dart';
+import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/today_provider.dart';
 
@@ -79,6 +82,7 @@ class SessionCompletionScreen extends ConsumerWidget {
                   ref.invalidate(weekProgressProvider);
                   ref.invalidate(recentSessionsProvider);
                   ref.invalidate(todayStatusProvider);
+                  ref.invalidate(dashboardStatsProvider);
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const MainShellScreen()),
                     (route) => false,

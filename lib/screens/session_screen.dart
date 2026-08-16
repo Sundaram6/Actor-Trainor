@@ -92,6 +92,12 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       isComplete: const drift.Value(true),
     ));
 
+    await db.insertSessionRecord(SessionRecordsCompanion(
+      completedAt: drift.Value(now),
+      blocksCompleted: const drift.Value(9),
+      totalMinutes: drift.Value(totalMinutes),
+    ));
+
     await db.upsertDayProgress(DailyProgressCompanion(
       date: drift.Value(today),
       completed: const drift.Value(true),

@@ -11,6 +11,14 @@ class Sessions extends Table {
   BoolColumn get isComplete => boolean().withDefault(const Constant(false))();
 }
 
+class SessionRecords extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get completedAt => dateTime()();
+  IntColumn get blocksCompleted => integer()();
+  IntColumn get totalMinutes => integer()();
+  TextColumn get notes => text().nullable()();
+}
+
 class DailyProgress extends Table {
   DateTimeColumn get date => dateTime()();
   BoolColumn get completed => boolean().withDefault(const Constant(false))();
@@ -29,13 +37,13 @@ class EveningLoads extends Table {
   Set<Column> get primaryKey => {date};
 }
 
-@DriftDatabase(tables: [Sessions, DailyProgress, EveningLoads])
+@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'instrument_db');
@@ -51,6 +59,22 @@ class AppDatabase extends _$AppDatabase {
   Future<int> getTotalMinutes() async {
     final result = await select(sessions).get();
     return result.fold<int>(0, (sum, s) => sum + s.totalMinutes);
+  }
+
+  // SessionRecord queries
+  Future<List<SessionRecord>> getAllSessionRecords() => select(sessionRecords).get();
+  Future<int> insertSessionRecord(SessionRecordsCompanion record) => into(sessionRecords).insert(record);
+
+  Future<int> getSessionsCountLast7Days() async {
+    final now = DateTime.now();
+    final sevenDaysAgo = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+    final records = await (select(sessionRecords)
+          ..where((s) => s.completedAt.isBiggerOrEqualValue(sevenDaysAgo)))
+        .get();
+    final sList = await (select(sessions)
+          ..where((s) => s.date.isBiggerOrEqualValue(sevenDaysAgo)))
+        .get();
+    return records.length > sList.length ? records.length : sList.length;
   }
 
   // Daily progress queries

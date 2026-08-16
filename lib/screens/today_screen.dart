@@ -11,6 +11,7 @@ class TodayScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(dashboardStatsProvider);
     final statusAsync = ref.watch(todayStatusProvider);
 
     return Scaffold(
@@ -31,6 +32,54 @@ class TodayScreen extends ConsumerWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 8),
+                statsAsync.when(
+                  data: (stats) => Row(
+                    children: [
+                      _DashboardStatCard(
+                        label: 'Today',
+                        value: stats.isCompleted ? 'Completed' : 'Not started',
+                        valueColor: stats.isCompleted
+                            ? const Color(0xFFD4AF37)
+                            : Colors.white70,
+                      ),
+                      const SizedBox(width: 8),
+                      _DashboardStatCard(
+                        label: 'Streak',
+                        value: '${stats.streak}',
+                        valueColor: stats.streak > 0
+                            ? const Color(0xFFD4AF37)
+                            : Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      _DashboardStatCard(
+                        label: 'This Week',
+                        value: '${stats.thisWeekCount}',
+                        valueColor: stats.thisWeekCount > 0
+                            ? const Color(0xFFD4AF37)
+                            : Colors.white,
+                      ),
+                    ],
+                  ),
+                  loading: () => Row(
+                    children: const [
+                      _DashboardStatCard(label: 'Today', value: 'Not started'),
+                      SizedBox(width: 8),
+                      _DashboardStatCard(label: 'Streak', value: '0'),
+                      SizedBox(width: 8),
+                      _DashboardStatCard(label: 'This Week', value: '0'),
+                    ],
+                  ),
+                  error: (error, stack) => Row(
+                    children: const [
+                      _DashboardStatCard(label: 'Today', value: 'Not started'),
+                      SizedBox(width: 8),
+                      _DashboardStatCard(label: 'Streak', value: '0'),
+                      SizedBox(width: 8),
+                      _DashboardStatCard(label: 'This Week', value: '0'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -72,7 +121,7 @@ class TodayScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '112 MINUTE ROUTINE',
+                                '98 MINUTE ROUTINE',
                                 style: AppTextStyles.caption,
                               ),
                             ],
@@ -111,7 +160,7 @@ class TodayScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -140,7 +189,7 @@ class TodayScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Consumer(
                   builder: (context, ref, _) {
                     final now = DateTime.now();
@@ -214,6 +263,56 @@ class TodayScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _DashboardStatCard({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white60,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: valueColor ?? Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

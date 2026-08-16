@@ -366,6 +366,373 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   }
 }
 
+class $SessionRecordsTable extends SessionRecords
+    with TableInfo<$SessionRecordsTable, SessionRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SessionRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _blocksCompletedMeta = const VerificationMeta(
+    'blocksCompleted',
+  );
+  @override
+  late final GeneratedColumn<int> blocksCompleted = GeneratedColumn<int>(
+    'blocks_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _totalMinutesMeta = const VerificationMeta(
+    'totalMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> totalMinutes = GeneratedColumn<int>(
+    'total_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    completedAt,
+    blocksCompleted,
+    totalMinutes,
+    notes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'session_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SessionRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_completedAtMeta);
+    }
+    if (data.containsKey('blocks_completed')) {
+      context.handle(
+        _blocksCompletedMeta,
+        blocksCompleted.isAcceptableOrUnknown(
+          data['blocks_completed']!,
+          _blocksCompletedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_blocksCompletedMeta);
+    }
+    if (data.containsKey('total_minutes')) {
+      context.handle(
+        _totalMinutesMeta,
+        totalMinutes.isAcceptableOrUnknown(
+          data['total_minutes']!,
+          _totalMinutesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_totalMinutesMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SessionRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SessionRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      )!,
+      blocksCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}blocks_completed'],
+      )!,
+      totalMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_minutes'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+    );
+  }
+
+  @override
+  $SessionRecordsTable createAlias(String alias) {
+    return $SessionRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class SessionRecord extends DataClass implements Insertable<SessionRecord> {
+  final int id;
+  final DateTime completedAt;
+  final int blocksCompleted;
+  final int totalMinutes;
+  final String? notes;
+  const SessionRecord({
+    required this.id,
+    required this.completedAt,
+    required this.blocksCompleted,
+    required this.totalMinutes,
+    this.notes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['completed_at'] = Variable<DateTime>(completedAt);
+    map['blocks_completed'] = Variable<int>(blocksCompleted);
+    map['total_minutes'] = Variable<int>(totalMinutes);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  SessionRecordsCompanion toCompanion(bool nullToAbsent) {
+    return SessionRecordsCompanion(
+      id: Value(id),
+      completedAt: Value(completedAt),
+      blocksCompleted: Value(blocksCompleted),
+      totalMinutes: Value(totalMinutes),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+    );
+  }
+
+  factory SessionRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SessionRecord(
+      id: serializer.fromJson<int>(json['id']),
+      completedAt: serializer.fromJson<DateTime>(json['completedAt']),
+      blocksCompleted: serializer.fromJson<int>(json['blocksCompleted']),
+      totalMinutes: serializer.fromJson<int>(json['totalMinutes']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'completedAt': serializer.toJson<DateTime>(completedAt),
+      'blocksCompleted': serializer.toJson<int>(blocksCompleted),
+      'totalMinutes': serializer.toJson<int>(totalMinutes),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  SessionRecord copyWith({
+    int? id,
+    DateTime? completedAt,
+    int? blocksCompleted,
+    int? totalMinutes,
+    Value<String?> notes = const Value.absent(),
+  }) => SessionRecord(
+    id: id ?? this.id,
+    completedAt: completedAt ?? this.completedAt,
+    blocksCompleted: blocksCompleted ?? this.blocksCompleted,
+    totalMinutes: totalMinutes ?? this.totalMinutes,
+    notes: notes.present ? notes.value : this.notes,
+  );
+  SessionRecord copyWithCompanion(SessionRecordsCompanion data) {
+    return SessionRecord(
+      id: data.id.present ? data.id.value : this.id,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      blocksCompleted: data.blocksCompleted.present
+          ? data.blocksCompleted.value
+          : this.blocksCompleted,
+      totalMinutes: data.totalMinutes.present
+          ? data.totalMinutes.value
+          : this.totalMinutes,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SessionRecord(')
+          ..write('id: $id, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('blocksCompleted: $blocksCompleted, ')
+          ..write('totalMinutes: $totalMinutes, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, completedAt, blocksCompleted, totalMinutes, notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SessionRecord &&
+          other.id == this.id &&
+          other.completedAt == this.completedAt &&
+          other.blocksCompleted == this.blocksCompleted &&
+          other.totalMinutes == this.totalMinutes &&
+          other.notes == this.notes);
+}
+
+class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
+  final Value<int> id;
+  final Value<DateTime> completedAt;
+  final Value<int> blocksCompleted;
+  final Value<int> totalMinutes;
+  final Value<String?> notes;
+  const SessionRecordsCompanion({
+    this.id = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.blocksCompleted = const Value.absent(),
+    this.totalMinutes = const Value.absent(),
+    this.notes = const Value.absent(),
+  });
+  SessionRecordsCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime completedAt,
+    required int blocksCompleted,
+    required int totalMinutes,
+    this.notes = const Value.absent(),
+  }) : completedAt = Value(completedAt),
+       blocksCompleted = Value(blocksCompleted),
+       totalMinutes = Value(totalMinutes);
+  static Insertable<SessionRecord> custom({
+    Expression<int>? id,
+    Expression<DateTime>? completedAt,
+    Expression<int>? blocksCompleted,
+    Expression<int>? totalMinutes,
+    Expression<String>? notes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (blocksCompleted != null) 'blocks_completed': blocksCompleted,
+      if (totalMinutes != null) 'total_minutes': totalMinutes,
+      if (notes != null) 'notes': notes,
+    });
+  }
+
+  SessionRecordsCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? completedAt,
+    Value<int>? blocksCompleted,
+    Value<int>? totalMinutes,
+    Value<String?>? notes,
+  }) {
+    return SessionRecordsCompanion(
+      id: id ?? this.id,
+      completedAt: completedAt ?? this.completedAt,
+      blocksCompleted: blocksCompleted ?? this.blocksCompleted,
+      totalMinutes: totalMinutes ?? this.totalMinutes,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (blocksCompleted.present) {
+      map['blocks_completed'] = Variable<int>(blocksCompleted.value);
+    }
+    if (totalMinutes.present) {
+      map['total_minutes'] = Variable<int>(totalMinutes.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SessionRecordsCompanion(')
+          ..write('id: $id, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('blocksCompleted: $blocksCompleted, ')
+          ..write('totalMinutes: $totalMinutes, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DailyProgressTable extends DailyProgress
     with TableInfo<$DailyProgressTable, DailyProgressData> {
   @override
@@ -909,6 +1276,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SessionsTable sessions = $SessionsTable(this);
+  late final $SessionRecordsTable sessionRecords = $SessionRecordsTable(this);
   late final $DailyProgressTable dailyProgress = $DailyProgressTable(this);
   late final $EveningLoadsTable eveningLoads = $EveningLoadsTable(this);
   @override
@@ -917,6 +1285,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     sessions,
+    sessionRecords,
     dailyProgress,
     eveningLoads,
   ];
@@ -1114,6 +1483,208 @@ typedef $$SessionsTableProcessedTableManager =
       $$SessionsTableUpdateCompanionBuilder,
       (Session, BaseReferences<_$AppDatabase, $SessionsTable, Session>),
       Session,
+      PrefetchHooks Function()
+    >;
+typedef $$SessionRecordsTableCreateCompanionBuilder =
+    SessionRecordsCompanion Function({
+      Value<int> id,
+      required DateTime completedAt,
+      required int blocksCompleted,
+      required int totalMinutes,
+      Value<String?> notes,
+    });
+typedef $$SessionRecordsTableUpdateCompanionBuilder =
+    SessionRecordsCompanion Function({
+      Value<int> id,
+      Value<DateTime> completedAt,
+      Value<int> blocksCompleted,
+      Value<int> totalMinutes,
+      Value<String?> notes,
+    });
+
+class $$SessionRecordsTableFilterComposer
+    extends Composer<_$AppDatabase, $SessionRecordsTable> {
+  $$SessionRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get blocksCompleted => $composableBuilder(
+    column: $table.blocksCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalMinutes => $composableBuilder(
+    column: $table.totalMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SessionRecordsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SessionRecordsTable> {
+  $$SessionRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get blocksCompleted => $composableBuilder(
+    column: $table.blocksCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalMinutes => $composableBuilder(
+    column: $table.totalMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SessionRecordsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SessionRecordsTable> {
+  $$SessionRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get blocksCompleted => $composableBuilder(
+    column: $table.blocksCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalMinutes => $composableBuilder(
+    column: $table.totalMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$SessionRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SessionRecordsTable,
+          SessionRecord,
+          $$SessionRecordsTableFilterComposer,
+          $$SessionRecordsTableOrderingComposer,
+          $$SessionRecordsTableAnnotationComposer,
+          $$SessionRecordsTableCreateCompanionBuilder,
+          $$SessionRecordsTableUpdateCompanionBuilder,
+          (
+            SessionRecord,
+            BaseReferences<_$AppDatabase, $SessionRecordsTable, SessionRecord>,
+          ),
+          SessionRecord,
+          PrefetchHooks Function()
+        > {
+  $$SessionRecordsTableTableManager(
+    _$AppDatabase db,
+    $SessionRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SessionRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SessionRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SessionRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
+                Value<int> blocksCompleted = const Value.absent(),
+                Value<int> totalMinutes = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+              }) => SessionRecordsCompanion(
+                id: id,
+                completedAt: completedAt,
+                blocksCompleted: blocksCompleted,
+                totalMinutes: totalMinutes,
+                notes: notes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime completedAt,
+                required int blocksCompleted,
+                required int totalMinutes,
+                Value<String?> notes = const Value.absent(),
+              }) => SessionRecordsCompanion.insert(
+                id: id,
+                completedAt: completedAt,
+                blocksCompleted: blocksCompleted,
+                totalMinutes: totalMinutes,
+                notes: notes,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SessionRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SessionRecordsTable,
+      SessionRecord,
+      $$SessionRecordsTableFilterComposer,
+      $$SessionRecordsTableOrderingComposer,
+      $$SessionRecordsTableAnnotationComposer,
+      $$SessionRecordsTableCreateCompanionBuilder,
+      $$SessionRecordsTableUpdateCompanionBuilder,
+      (
+        SessionRecord,
+        BaseReferences<_$AppDatabase, $SessionRecordsTable, SessionRecord>,
+      ),
+      SessionRecord,
       PrefetchHooks Function()
     >;
 typedef $$DailyProgressTableCreateCompanionBuilder =
@@ -1454,6 +2025,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$SessionsTableTableManager get sessions =>
       $$SessionsTableTableManager(_db, _db.sessions);
+  $$SessionRecordsTableTableManager get sessionRecords =>
+      $$SessionRecordsTableTableManager(_db, _db.sessionRecords);
   $$DailyProgressTableTableManager get dailyProgress =>
       $$DailyProgressTableTableManager(_db, _db.dailyProgress);
   $$EveningLoadsTableTableManager get eveningLoads =>

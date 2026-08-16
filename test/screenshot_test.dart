@@ -6,11 +6,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
-import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 
@@ -61,7 +61,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 19: Session Completion Screen screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 20: Dashboard Stats and Session Persistence Flow', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -74,15 +74,9 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(testDb),
         ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          home: RepaintBoundary(
-            key: boundaryKey,
-            child: const SessionCompletionScreen(
-              totalMinutes: 98,
-              blocksCompleted: 9,
-            ),
-          ),
+        child: RepaintBoundary(
+          key: boundaryKey,
+          child: const TheInstrumentApp(),
         ),
       ),
     );
@@ -105,49 +99,51 @@ void main() {
       });
     }
 
-    // Verify Session Completion Screen
-    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-    expect(find.text('SESSION COMPLETE'), findsOneWidget);
-    expect(find.text('The work is done. Leave it in the room.'), findsOneWidget);
-    expect(find.text('Blocks Completed'), findsOneWidget);
-    expect(find.text('9 / ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('Total Time'), findsOneWidget);
-    expect(find.text('98 min'), findsOneWidget);
-    expect(find.text('Status'), findsOneWidget);
-    expect(find.text('Closed'), findsOneWidget);
-    expect(find.text('RETURN TO DASHBOARD'), findsOneWidget);
+    // 1. Initial Dashboard (Not Started)
+    expect(find.text('THE INSTRUMENT'), findsOneWidget);
+    expect(find.text('Today'), findsNWidgets(2)); // Stat card + bottom nav label
+    expect(find.text('Not started'), findsOneWidget);
+    expect(find.text('MORNING ROUTINE: NOT STARTED'), findsOneWidget);
+    expect(find.text('Streak'), findsOneWidget);
+    expect(find.text('This Week'), findsOneWidget);
 
-    // Capture screenshot
-    await captureScreen('session_completion_screen.png');
-  });
-
-  testWidgets('SessionScreen navigates to SessionCompletionScreen on completion', (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1170, 2532);
-    tester.view.devicePixelRatio = 3.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(testDb),
-        ],
-        child: const MaterialApp(
-          debugShowCheckedModeBanner: false,
-          home: SessionScreen(startBlockIndex: 8), // Last block
-        ),
-      ),
-    );
+    // 2. Start Routine & Complete it
+    await tester.tap(find.text('START ROUTINE'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    // Tap complete button (check icon)
+    // Jump / Skip through to the last block
+    for (int i = 0; i < kRoutineBlocks.length - 1; i++) {
+      await tester.tap(find.byIcon(Icons.skip_next));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    // On Block 9, tap Check to complete
+    expect(find.byIcon(Icons.check), findsOneWidget);
     await tester.tap(find.byIcon(Icons.check));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Should navigate to SessionCompletionScreen
+    // Verify SessionCompletionScreen
     expect(find.byType(SessionCompletionScreen), findsOneWidget);
     expect(find.text('SESSION COMPLETE'), findsOneWidget);
+
+    // Tap RETURN TO DASHBOARD
+    await tester.tap(find.text('RETURN TO DASHBOARD'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Verify Dashboard shows updated stats from Drift:
+    // Today = Completed, Streak = 1, This Week = 1
+    expect(find.text('Today'), findsNWidgets(2));
+    expect(find.text('Completed'), findsOneWidget);
+    expect(find.text('MORNING ROUTINE: COMPLETED'), findsOneWidget);
+    expect(find.text('Streak'), findsOneWidget);
+    expect(find.text('1'), findsNWidgets(3)); // Streak "1", Week 1 badge "1", This Week "1"
+    expect(find.text('This Week'), findsOneWidget);
+
+    // Capture screenshot of Dashboard with updated stats
+    await captureScreen('dashboard_stats_top.png');
   });
 }
