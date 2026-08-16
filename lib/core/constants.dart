@@ -253,11 +253,28 @@ const List<BlockConfig> kRoutineBlocks = [
     ],
   ),
   BlockConfig(
-    id: 'blockColdRead',
+    id: 'blockColdReading',
     name: 'Cold Reading / Text Work',
-    durationMinutes: 13,
+    durationMinutes: 10,
     tag: 'TEXT',
-    description: 'Sight-reading, script analysis, and scoring. Develops text handling skills under pressure. Look for operative words and beats in the scene.',
+    description: 'Encounter the text without preparation. Three stages: cold take, scoring, and integration. Read aloud. Do not memorize — understand.',
+    subSteps: [
+      SubStep(
+        title: 'Cold Take — First Encounter',
+        instruction: 'Read the text aloud for the first time. No preparation. No rehearsal voice. Notice where your breath catches. Notice where you rush. Notice what you want as you speak. Do not judge the read. The first impulse is often the truest.',
+        durationSeconds: 180,
+      ),
+      SubStep(
+        title: 'Scoring the Text',
+        instruction: 'Mark the script mentally. Find the beats — where does the power shift? Underline the operative words that carry the argument. What is the subtext? What is being fought for beneath the lines? Do not act yet. Understand first.',
+        durationSeconds: 240,
+      ),
+      SubStep(
+        title: 'Integration — Live the Text',
+        instruction: 'Read again. This time let the emotional preparation from Block 5, the continuity from Block 6, and the embodiment from Block 7 collide with the words. Do not perform the text. Let the text perform you. If a line lands differently than you planned, follow it.',
+        durationSeconds: 180,
+      ),
+    ],
   ),
   BlockConfig(
     id: 'blockIntegration',
