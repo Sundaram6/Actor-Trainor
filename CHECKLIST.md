@@ -78,15 +78,26 @@
 
 ## ⏱️ 3. Training Player & Flow Checklist
 
+### Single Source of Truth & Guided Sub-Steps (`lib/core/constants.dart`)
+- [x] **`BlockConfig` & `SubStep` Data Models**: Single source of truth defining all block IDs, titles, durations, category tags, descriptions, and exercise sub-steps.
+- [x] **Guided Exercise Sub-Steps Engine**:
+  - [x] **Breath Lab (Block 1)**: 4 guided sub-steps (Diaphragmatic Breathing 150s, Rib Expansion 150s, Breath Control 150s, Silent Inhalation 150s).
+  - [x] **Emotional Preparation (Block 5)**: 3-step Adler given circumstances vs. Strasberg affective memory sequence + exit ritual (240s each).
+  - [x] **Continuity of Thought (Block 6)**: 3-stage stream-of-consciousness, dual awareness, and character entry internal monologue (180s, 180s, 240s).
+  - [x] **Character Embodiment (Block 7)**: 3-stage physical center/gait, vocal texture/rhythm, and full integration (180s, 180s, 240s).
+  - [x] **Cold Reading / Text Work (Block 8)**: 3-stage first impulse cold take, script scoring/subtext, and text living integration (180s, 240s, 180s).
+  - [x] **Integration & Cool-down (Block 9)**: 3-stage de-roling grounding, silent reflection, and releasing breaths (180s each).
+
 ### Active Session Screen (`lib/screens/session_screen.dart`)
-- [x] **Linear Progress Bar**: Reflects overall elapsed time across all 9 blocks (0.0 to 1.0).
-- [x] **Block Header**: Shows `BLOCK X OF 9`.
+- [x] **Linear Progress Bar**: Reflects overall elapsed time across all blocks (0.0 to 1.0).
+- [x] **Block & Step Headers**: Shows `BLOCK X OF 9` and dynamic sub-step indicator (`STEP X OF Y`).
 - [x] **Numbered Badge**: Large circular gold badge with active block number.
-- [x] **Block Info**: Active block title and duration in minutes.
-- [x] **Digital Countdown Timer**: Large 72pt monospace display (`MM:SS`).
+- [x] **Block Info & Sub-Step Titles**: Dynamic sub-step title (or block title if no sub-steps).
+- [x] **Interactive Instruction Cards**: Renders pedagogically rich exercise prompts and method instructions with responsive layout.
+- [x] **Digital Countdown Timer**: Monospace digital timer formatted (`MM:SS`) dynamically counting sub-step / block seconds.
 - [x] **Controls**:
   - [x] Play / Pause toggle with auto-countdown.
-  - [x] Next / Skip button advancing immediately to the next block.
+  - [x] Next / Skip button advancing sub-steps and blocks immediately.
   - [x] Checkmark button on final block (Block 9) completing the session.
 - [x] **Up Next Card**: Displays upcoming block number and title (hidden on block 9).
 - [x] **Sound Cue**: Triggers bell chime on every transition.
@@ -98,13 +109,14 @@
 - [x] **Technique Guide**: `ABOUT THIS BLOCK` gold label with full pedagogical instructions.
 - [x] **Direct Launch Action**: `START FROM THIS BLOCK` button navigating directly into `SessionScreen` at the chosen block index.
 
-### Session Complete Celebration Screen (`lib/screens/session_complete_screen.dart`)
-- [x] **Celebration Badge**: Circular gold checkmark badge.
-- [x] **Headline**: `ROUTINE COMPLETE` with subtitle `You completed all 9 training blocks.`.
-- [x] **Summary Card**:
-  - [x] `9/9` BLOCKS completed.
-  - [x] `112` MINUTES logged.
-- [x] **Back Action**: `BACK TO TODAY` full-width gold button popping back to root and invalidating providers.
+### Session Completion Screen (`lib/screens/session_completion_screen.dart`)
+- [x] **Celebration Icon**: Gold circular checkmark (`Icons.check_circle_outline`).
+- [x] **Headline**: `SESSION COMPLETE` with subtitle `The work is done. Leave it in the room.`.
+- [x] **Stat Cards Grid**:
+  - [x] `Blocks Completed`: `9 / 9`.
+  - [x] `Total Time`: `98 min`.
+  - [x] `Status`: `Closed`.
+- [x] **Back Action**: `RETURN TO DASHBOARD` full-width gold button clearing navigation stack and refreshing Riverpod stats providers.
 
 ### Evening Load Screen (`lib/screens/evening_load_screen.dart`)
 - [x] **App Bar**: Back button and gold `SAVE` text button.
