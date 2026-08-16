@@ -10,6 +10,7 @@ import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
@@ -61,7 +62,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 20: Dashboard Stats and Session Persistence Flow', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 21: Progress Tab Session History and Persistence Flow', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -145,5 +146,20 @@ void main() {
 
     // Capture screenshot of Dashboard with updated stats
     await captureScreen('dashboard_stats_top.png');
+
+    // 3. Navigate to Progress tab in BottomNavigationBar
+    await tester.tap(find.byIcon(Icons.trending_up));
+    await tester.pumpAndSettle();
+
+    // Verify ProgressScreen renders session history list
+    expect(find.byType(ProgressScreen), findsOneWidget);
+    expect(find.text('PROGRESS'), findsOneWidget);
+    expect(find.textContaining('9 blocks · 100 min'), findsOneWidget);
+
+    // Capture screenshot of Progress screen
+    await captureScreen('progress_screen.png');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
 }
