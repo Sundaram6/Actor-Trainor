@@ -10,7 +10,6 @@ import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/block_detail_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 
@@ -61,7 +60,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 16b: Routine tab rendered from kRoutineBlocks and screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 16c: Session Screen rendered from kRoutineBlocks and screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -99,27 +98,37 @@ void main() {
       });
     }
 
-    // 1. Navigate to Routine tab
-    await tester.tap(find.text(tabRoutine));
+    // 1. Tap START ROUTINE from Today
+    await tester.tap(find.text(startRoutineButton));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('ROUTINE'), findsOneWidget);
-    expect(find.text('112 MINUTES • 9 BLOCKS'), findsOneWidget);
+    expect(find.text('SESSION'), findsOneWidget);
+    expect(find.text('BLOCK 1 OF 9'), findsOneWidget);
     expect(find.text('Breath Fundamentals'), findsOneWidget);
+    expect(find.text('10:00'), findsOneWidget);
+    expect(find.text('UP NEXT'), findsOneWidget);
     expect(find.text('Physical Warm-up'), findsOneWidget);
-    expect(find.text('Memory Foundation'), findsOneWidget);
 
-    // Capture screenshot of Routine Tab
-    await captureScreen('routine_tab.png');
+    // Capture Session Screen
+    await captureScreen('session_screen.png');
 
-    // 2. Tap block -> BlockDetailScreen opens
-    await tester.tap(find.text('Memory Foundation'));
+    // 2. Skip through blocks to block 9
+    for (int i = 1; i <= 8; i++) {
+      await tester.tap(find.byIcon(Icons.skip_next));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.text('BLOCK 9 OF 9'), findsOneWidget);
+    expect(find.text('Integration & Cool-down'), findsOneWidget);
+
+    // 3. Complete session
+    await tester.tap(find.byIcon(Icons.check));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byType(BlockDetailScreen), findsOneWidget);
-    expect(find.text('ABOUT THIS BLOCK'), findsOneWidget);
-    expect(find.text('START FROM THIS BLOCK'), findsOneWidget);
+    expect(find.text('ROUTINE COMPLETE'), findsOneWidget);
+    expect(find.text('BACK TO TODAY'), findsOneWidget);
   });
 }

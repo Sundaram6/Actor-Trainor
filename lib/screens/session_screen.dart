@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../core/constants.dart';
 import '../providers/database_provider.dart';
-import 'session_complete_screen.dart';
-import '../services/sound_service.dart';
 import '../database/database.dart';
+import '../services/sound_service.dart';
+import 'session_complete_screen.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
   final int startBlockIndex;
@@ -17,19 +17,7 @@ class SessionScreen extends ConsumerStatefulWidget {
 }
 
 class _SessionScreenState extends ConsumerState<SessionScreen> {
-  final List<Map<String, dynamic>> _blocks = [
-    {'name': 'Breath Fundamentals', 'duration': 10},
-    {'name': 'Physical Warm-up', 'duration': 10},
-    {'name': 'Memory Foundation', 'duration': 15},
-    {'name': 'Voice & Resonance', 'duration': 15},
-    {'name': 'Emotional Preparation', 'duration': 12},
-    {'name': 'Continuity of Thought', 'duration': 15},
-    {'name': 'Character Embodiment', 'duration': 12},
-    {'name': 'Cold Reading / Text Work', 'duration': 13},
-    {'name': 'Integration & Cool-down', 'duration': 10},
-  ];
-
-  int _currentIndex = 0;
+  late int _currentIndex;
   int _secondsRemaining = 0;
   Timer? _timer;
   bool _isRunning = false;
@@ -38,7 +26,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.startBlockIndex;
-    _secondsRemaining = (_blocks[_currentIndex]['duration'] as int) * 60;
+    _secondsRemaining = kRoutineBlocks[_currentIndex].durationMinutes * 60;
   }
 
   void _toggleTimer() {
@@ -52,7 +40,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         } else {
           _timer?.cancel();
           setState(() => _isRunning = false);
-          if (_currentIndex < _blocks.length - 1) {
+          if (_currentIndex < kRoutineBlocks.length - 1) {
             _nextBlock();
           } else {
             _onSessionComplete();
@@ -66,10 +54,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   void _nextBlock() {
     SoundService.playBell();
     _timer?.cancel();
-    if (_currentIndex < _blocks.length - 1) {
+    if (_currentIndex < kRoutineBlocks.length - 1) {
       setState(() {
         _currentIndex++;
-        _secondsRemaining = (_blocks[_currentIndex]['duration'] as int) * 60;
+        _secondsRemaining = kRoutineBlocks[_currentIndex].durationMinutes * 60;
         _isRunning = false;
       });
     }
@@ -81,7 +69,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final db = ref.read(databaseProvider);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final totalMinutes = _blocks.fold<int>(0, (s, b) => s + (b['duration'] as int));
+    final totalMinutes = kRoutineBlocks.fold<int>(0, (s, b) => s + b.durationMinutes);
 
     await db.insertSession(SessionsCompanion(
       date: drift.Value(now),
@@ -123,16 +111,12 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final current = _blocks[_currentIndex];
-    final currentDuration = current['duration'] as int;
-    final total = _blocks.fold<int>(0, (s, b) => s + (b['duration'] as int));
-    final elapsedMins = _blocks.sublist(0, _currentIndex).fold<int>(
-              0,
-              (s, b) => s + (b['duration'] as int),
-            ) +
-        ((currentDuration * 60 - _secondsRemaining) ~/ 60);
-    final progress = total > 0 ? elapsedMins / total : 0.0;
-    final isLastBlock = _currentIndex == _blocks.length - 1;
+    final current = kRoutineBlocks[_currentIndex];
+    final total = kRoutineBlocks.fold<int>(0, (s, b) => s + b.durationMinutes);
+    final elapsedMins = kRoutineBlocks.sublist(0, _currentIndex).fold<int>(0, (s, b) => s + b.durationMinutes) +
+        ((current.durationMinutes * 60 - _secondsRemaining) ~/ 60);
+    final progress = elapsedMins / total;
+    final isLastBlock = _currentIndex == kRoutineBlocks.length - 1;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -164,7 +148,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'BLOCK ${_currentIndex + 1} OF 9',
+              'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
               style: AppTextStyles.caption,
             ),
             const SizedBox(height: 40),
@@ -187,12 +171,12 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              current['name'] as String,
+              current.name,
               style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              '${current['duration']} MINUTES',
+              '${current.durationMinutes} MINUTES',
               style: AppTextStyles.caption,
             ),
             const SizedBox(height: 48),
@@ -244,7 +228,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        _blocks[_currentIndex + 1]['name'] as String,
+                        kRoutineBlocks[_currentIndex + 1].name,
                         style: AppTextStyles.body.copyWith(
                           color: AppColors.textSecondary,
                         ),
