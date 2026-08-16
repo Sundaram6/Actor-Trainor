@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
@@ -61,7 +60,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 17b: Continuity of Thought 6-Anchor Game screenshot', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 17c: Emotional Preparation 3-Step Sequence screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -78,7 +77,7 @@ void main() {
           debugShowCheckedModeBanner: false,
           home: RepaintBoundary(
             key: boundaryKey,
-            child: const SessionScreen(startBlockIndex: 5), // Block 6 (0-indexed)
+            child: const SessionScreen(startBlockIndex: 4), // Block 5 (0-indexed)
           ),
         ),
       ),
@@ -102,20 +101,20 @@ void main() {
       });
     }
 
-    // Verify Block 6 Step 1: Anchor 1 — The Red Door
+    // Verify Block 5 Step 1: Imagination — The "As-If"
     expect(find.text('SESSION'), findsOneWidget);
-    expect(find.text('BLOCK 6 OF 9'), findsOneWidget);
-    expect(find.text('Anchor 1 — The Red Door'), findsOneWidget);
-    expect(find.text('STEP 1 OF 6'), findsOneWidget);
+    expect(find.text('BLOCK 5 OF ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('Imagination — The "As-If"'), findsOneWidget);
+    expect(find.text('STEP 1 OF 3'), findsOneWidget);
     expect(
-      find.text('A red door you have never opened. Keep talking. Do not stop. Let the image lead you.'),
+      find.text('Adler: What are the given circumstances? Who am I? Where am I? What do I want? State it in one sentence. Strasberg: Choose a personal memory that carries the same emotional temperature as the scene. Do not force the feeling — let the memory do the work.'),
       findsOneWidget,
     );
-    expect(find.text('02:30'), findsOneWidget);
+    expect(find.text('04:00'), findsOneWidget);
     expect(find.text('UP NEXT'), findsOneWidget);
-    expect(find.text('Character Embodiment'), findsOneWidget);
+    expect(find.text('Continuity of Thought'), findsOneWidget);
 
-    // Capture screenshot on Block 6, Anchor 1
-    await captureScreen('session_continuity_anchor1.png');
+    // Capture screenshot on Block 5, Step 1
+    await captureScreen('session_emotion_step1.png');
   });
 }

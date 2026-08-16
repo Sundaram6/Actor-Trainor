@@ -185,7 +185,24 @@ const List<BlockConfig> kRoutineBlocks = [
     name: 'Emotional Preparation',
     durationMinutes: 12,
     tag: 'EMOTION',
-    description: 'Private moment, emotional recall, and "as-if" exercises. Accesses truthful feeling without forcing emotion. Allow the body to respond naturally to the stimulus.',
+    description: 'Three-step emotional preparation: imagination, circumstances, exit ritual. Choose your method — Adler (given circumstances) or Strasberg (affective memory).',
+    subSteps: [
+      SubStep(
+        title: 'Imagination — The "As-If"',
+        instruction: 'Adler: What are the given circumstances? Who am I? Where am I? What do I want? State it in one sentence. Strasberg: Choose a personal memory that carries the same emotional temperature as the scene. Do not force the feeling — let the memory do the work.',
+        durationSeconds: 240,
+      ),
+      SubStep(
+        title: 'Circumstances — Deepening',
+        instruction: 'Adler: Add sensory specifics. What time of day? What is the weather? What did you eat for breakfast? The more specific, the more truthful. Strasberg: Relive the memory through the five senses. Smell, taste, texture, sound, sight. Do not watch yourself — be inside it.',
+        durationSeconds: 240,
+      ),
+      SubStep(
+        title: 'Exit Ritual — Release',
+        instruction: 'Both methods: Shake the hands vigorously. Take three sharp exhales through the mouth. Touch the floor. The emotion is a tool, not a tattoo. Leave it in the room. Do not carry it into your day.',
+        durationSeconds: 240,
+      ),
+    ],
   ),
   BlockConfig(
     id: 'blockContinuity',

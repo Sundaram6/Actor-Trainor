@@ -146,136 +146,140 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: AppColors.cardSurface,
-                color: AppColors.goldAccent,
-                minHeight: 6,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
-              style: AppTextStyles.caption,
-            ),
-            const SizedBox(height: 32),
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.goldAccent.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '${_currentIndex + 1}',
-                  style: AppTextStyles.h1.copyWith(
-                    color: AppColors.goldAccent,
-                    fontSize: 40,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              current.subSteps != null
-                  ? current.subSteps![_subStepIndex].title
-                  : current.name,
-              style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              current.subSteps != null
-                  ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
-                  : '${current.durationMinutes} MINUTES',
-              style: AppTextStyles.caption,
-            ),
-            if (current.subSteps != null) ...[
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.cardBorder),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: AppColors.cardSurface,
+                  color: AppColors.goldAccent,
+                  minHeight: 6,
                 ),
-                child: Text(
-                  current.subSteps![_subStepIndex].instruction,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-            const SizedBox(height: 32),
-            Text(
-              _timeText,
-              style: AppTextStyles.h1.copyWith(
-                fontSize: 72,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _ControlButton(
-                  icon: _isRunning ? Icons.pause : Icons.play_arrow,
-                  onPressed: _toggleTimer,
-                ),
-                const SizedBox(width: 24),
-                _ControlButton(
-                  icon: isLastBlock ? Icons.check : Icons.skip_next,
-                  onPressed: isLastBlock ? _onSessionComplete : _nextBlock,
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            if (!isLastBlock) ...[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('UP NEXT', style: AppTextStyles.caption),
               ),
               const SizedBox(height: 8),
+              Text(
+                'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
+                style: AppTextStyles.caption,
+              ),
+              const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.all(16),
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.cardBorder),
+                  color: AppColors.goldAccent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      '${_currentIndex + 2}',
-                      style: AppTextStyles.h2.copyWith(
-                        color: AppColors.goldAccent,
-                        fontSize: 18,
-                      ),
+                child: Center(
+                  child: Text(
+                    '${_currentIndex + 1}',
+                    style: AppTextStyles.h1.copyWith(
+                      color: AppColors.goldAccent,
+                      fontSize: 36,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        kRoutineBlocks[_currentIndex + 1].name,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+              const SizedBox(height: 16),
+              Text(
+                current.subSteps != null
+                    ? current.subSteps![_subStepIndex].title
+                    : current.name,
+                style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                current.subSteps != null
+                    ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
+                    : '${current.durationMinutes} MINUTES',
+                style: AppTextStyles.caption,
+              ),
+              if (current.subSteps != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Text(
+                    current.subSteps![_subStepIndex].instruction,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              Text(
+                _timeText,
+                style: AppTextStyles.h1.copyWith(
+                  fontSize: 64,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _ControlButton(
+                    icon: _isRunning ? Icons.pause : Icons.play_arrow,
+                    onPressed: _toggleTimer,
+                  ),
+                  const SizedBox(width: 24),
+                  _ControlButton(
+                    icon: isLastBlock ? Icons.check : Icons.skip_next,
+                    onPressed: isLastBlock ? _onSessionComplete : _nextBlock,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              if (!isLastBlock) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('UP NEXT', style: AppTextStyles.caption),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${_currentIndex + 2}',
+                        style: AppTextStyles.h2.copyWith(
+                          color: AppColors.goldAccent,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          kRoutineBlocks[_currentIndex + 1].name,
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
             ],
-          ],
+          ),
         ),
       ),
     );
