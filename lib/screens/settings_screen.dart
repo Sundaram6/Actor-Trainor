@@ -53,7 +53,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notificationEnabled', value);
     ref.read(notificationEnabledProvider.notifier).state = value;
-    await NotificationService.scheduleDailyReminder(enabled: value);
+
+    final notifService = NotificationService();
+    if (value) {
+      final time = ref.read(notificationTimeProvider);
+      await notifService.scheduleDailyReminder(
+        hour: time.hour,
+        minute: time.minute,
+      );
+    } else {
+      await notifService.cancelReminder();
+    }
   }
 
   Future<void> _saveTime(TimeOfDay time) async {
@@ -61,9 +71,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await prefs.setInt('notificationHour', time.hour);
     await prefs.setInt('notificationMinute', time.minute);
     ref.read(notificationTimeProvider.notifier).state = time;
-    final notifOn = ref.read(notificationEnabledProvider);
-    if (notifOn) {
-      await NotificationService.scheduleDailyReminder(enabled: true);
+
+    // Re-schedule if reminders are active
+    if (ref.read(notificationEnabledProvider)) {
+      await NotificationService().scheduleDailyReminder(
+        hour: time.hour,
+        minute: time.minute,
+      );
     }
   }
 
