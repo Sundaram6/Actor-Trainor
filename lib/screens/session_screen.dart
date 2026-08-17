@@ -6,6 +6,7 @@ import '../core/constants.dart';
 import '../providers/database_provider.dart';
 import '../database/database.dart';
 import '../services/sound_service.dart';
+import '../services/session_state_service.dart';
 import 'session_completion_screen.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,61 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       _subStepIndex = 0;
       _secondsRemaining = kRoutineBlocks[_currentIndex].subSteps![0].durationSeconds;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkResumeState());
+  }
+
+  Future<void> _checkResumeState() async {
+    if (widget.startBlockIndex > 0) return;
+    final saved = await SessionStateService().loadState();
+    if (saved != null && mounted) {
+      final blockName = saved.blockIndex < kRoutineBlocks.length
+          ? kRoutineBlocks[saved.blockIndex].name
+          : 'Block ${saved.blockIndex + 1}';
+      final resume = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => RepaintBoundary(
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF2A2A2A)),
+            ),
+            title: const Text(
+              'Resume Session?',
+              style: TextStyle(
+                color: Color(0xFFD4AF37),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            content: Text(
+              'You have an unfinished session in $blockName. Resume where you left off?',
+              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('START FRESH', style: TextStyle(color: Colors.white54)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('RESUME', style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (resume == true && mounted) {
+        setState(() {
+          _currentIndex = saved.blockIndex;
+          _subStepIndex = saved.stepIndex;
+          _secondsRemaining = saved.remainingSeconds;
+        });
+      } else {
+        await SessionStateService().clearState();
+      }
+    }
   }
 
   void _toggleTimer() {
@@ -42,6 +98,13 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (_secondsRemaining > 0) {
           setState(() => _secondsRemaining--);
+          if (_secondsRemaining % 5 == 0) {
+            SessionStateService().saveState(
+              blockIndex: _currentIndex,
+              stepIndex: _subStepIndex,
+              remainingSeconds: _secondsRemaining,
+            );
+          }
         } else {
           final block = kRoutineBlocks[_currentIndex];
           final hasSubSteps = block.subSteps != null;
@@ -51,6 +114,11 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
               _subStepIndex++;
               _secondsRemaining = block.subSteps![_subStepIndex].durationSeconds;
             });
+            SessionStateService().saveState(
+              blockIndex: _currentIndex,
+              stepIndex: _subStepIndex,
+              remainingSeconds: _secondsRemaining,
+            );
           } else if (_currentIndex < kRoutineBlocks.length - 1) {
             _nextBlock();
           } else {
@@ -75,12 +143,18 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
             : block.durationMinutes * 60;
         _isRunning = false;
       });
+      SessionStateService().saveState(
+        blockIndex: _currentIndex,
+        stepIndex: _subStepIndex,
+        remainingSeconds: _secondsRemaining,
+      );
     }
   }
 
   Future<void> _onSessionComplete() async {
     ref.read(soundServiceProvider).playCompletionTone();
     _timer?.cancel();
+    await SessionStateService().clearState();
     final db = ref.read(databaseProvider);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

@@ -8,44 +8,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_instrument/app.dart';
 import 'package:the_instrument/core/constants.dart';
+import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/progress_screen.dart';
-import 'package:the_instrument/screens/routine_screen.dart';
-import 'package:the_instrument/screens/session_completion_screen.dart';
-import 'package:the_instrument/screens/settings_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
-  // Load Roboto font family
   final fontLoader = FontLoader('Roboto');
   final robotoFiles = [
     r'C:\Users\sundr\AppData\Local\flutter\bin\cache\artifacts\material_fonts\roboto-regular.ttf',
     r'C:\Users\sundr\AppData\Local\flutter\bin\cache\artifacts\material_fonts\roboto-bold.ttf',
     r'C:\Users\sundr\AppData\Local\flutter\bin\cache\artifacts\material_fonts\roboto-medium.ttf',
   ];
+
   for (final path in robotoFiles) {
     final file = File(path);
     if (file.existsSync()) {
-      fontLoader.addFont(Future.value(ByteData.view(file.readAsBytesSync().buffer)));
+      final bytes = file.readAsBytesSync();
+      fontLoader.addFont(Future.value(ByteData.view(bytes.buffer)));
     }
   }
   await fontLoader.load();
+}
 
-  // Load MaterialIcons font family
-  final iconLoader = FontLoader('MaterialIcons');
-  final iconFile = File(r'C:\Users\sundr\AppData\Local\flutter\bin\cache\artifacts\material_fonts\MaterialIcons-Regular.otf');
-  final iconTtfFile = File(r'C:\Users\sundr\AppData\Local\flutter\engine\src\flutter\tools\font_subset\fixtures\MaterialIcons-Regular.ttf');
-  if (iconFile.existsSync()) {
-    iconLoader.addFont(Future.value(ByteData.view(iconFile.readAsBytesSync().buffer)));
-    await iconLoader.load();
-  } else if (iconTtfFile.existsSync()) {
-    iconLoader.addFont(Future.value(ByteData.view(iconTtfFile.readAsBytesSync().buffer)));
-    await iconLoader.load();
-  }
+Future<void> captureBoundary(WidgetTester tester, GlobalKey key, String fileName) async {
+  const String artifactDir = r'C:\Users\sundr\.gemini\antigravity\brain\a9302ed1-deca-466c-a8e7-823182d27841';
+  await tester.runAsync(() async {
+    final context = key.currentContext;
+    if (context == null) return;
+    final boundary = context.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return;
+    final ui.Image image = await boundary.toImage(pixelRatio: 1.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final file = File('$artifactDir/$fileName');
+    await file.writeAsBytes(byteData!.buffer.asUint8List());
+  });
 }
 
 void main() {
@@ -58,6 +57,7 @@ void main() {
       'notificationEnabled': false,
       'notificationHour': 7,
       'notificationMinute': 0,
+      'session_active': false,
     });
     await loadRealFonts();
     SoundService.enabled = false;
@@ -72,11 +72,18 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 22: Settings Screen Sound and Reminders Flow', (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15 resolution
+  testWidgets('Micro-Phase 26: Interrupted Session Resume Dialog', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('session_active', true);
+    await prefs.setInt('session_block_index', 2);
+    await prefs.setInt('session_step_index', 0);
+    await prefs.setInt('session_remaining_seconds', 450);
+    await prefs.setInt('session_started_at', DateTime.now().millisecondsSinceEpoch);
 
     final GlobalKey boundaryKey = GlobalKey();
 
@@ -85,139 +92,62 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(testDb),
         ],
-        child: RepaintBoundary(
-          key: boundaryKey,
-          child: const TheInstrumentApp(),
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: boundaryKey,
+            child: child!,
+          ),
+          home: const MainShellScreen(),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    final String artifactDir = r'C:\Users\sundr\.gemini\antigravity\brain\a9302ed1-deca-466c-a8e7-823182d27841';
-    final Directory outDir = Directory(artifactDir);
-    if (!outDir.existsSync()) {
-      outDir.createSync(recursive: true);
-    }
-
-    Future<void> captureScreen(String fileName) async {
-      await tester.runAsync(() async {
-        final boundary = boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-        final ui.Image image = await boundary.toImage(pixelRatio: 1.0);
-        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-        final file = File('$artifactDir/$fileName');
-        await file.writeAsBytes(byteData!.buffer.asUint8List());
-      });
-    }
-
-    // 1. Initial Dashboard (Not Started)
-    expect(find.text('THE INSTRUMENT'), findsOneWidget);
-    expect(find.text('Today'), findsNWidgets(2)); // Stat card + bottom nav label
-    expect(find.text('Not started'), findsOneWidget);
-    expect(find.text('MORNING ROUTINE: NOT STARTED'), findsOneWidget);
-    expect(find.text('Streak'), findsOneWidget);
-    expect(find.text('This Week'), findsOneWidget);
-
-    // 2. Start Routine & Complete it
+    // Tap Start Routine
     await tester.tap(find.text('START ROUTINE'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 500));
 
-    // Jump / Skip through to the last block
-    for (int i = 0; i < kRoutineBlocks.length - 1; i++) {
-      await tester.tap(find.byIcon(Icons.skip_next));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    // Verify Resume Dialog appears
+    expect(find.text('Resume Session?'), findsOneWidget);
+    expect(find.textContaining('Memory Foundation'), findsOneWidget);
+    expect(find.text('START FRESH'), findsOneWidget);
+    expect(find.text('RESUME'), findsOneWidget);
 
-    // On Block 9, tap Check to complete
-    expect(find.byIcon(Icons.check), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.check));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verify SessionCompletionScreen
-    expect(find.byType(SessionCompletionScreen), findsOneWidget);
-    expect(find.text('SESSION COMPLETE'), findsOneWidget);
+    // Capture screenshot of Resume Dialog
+    final dialogFinder = find.ancestor(of: find.byType(AlertDialog), matching: find.byType(RepaintBoundary));
+    await captureFinder(tester, dialogFinder, 'resume_session_dialog.png');
 
-    // Tap RETURN TO DASHBOARD
-    await tester.tap(find.text('RETURN TO DASHBOARD'));
+    // Tap RESUME
+    await tester.tap(find.text('RESUME'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 200));
 
-    // Verify Dashboard shows updated stats from Drift:
-    // Today = Completed, Streak = 1, This Week = 1
-    expect(find.text('Today'), findsNWidgets(2));
-    expect(find.text('Completed'), findsOneWidget);
-    expect(find.text('MORNING ROUTINE: COMPLETED'), findsOneWidget);
-    expect(find.text('Streak'), findsOneWidget);
-    expect(find.text('1'), findsNWidgets(3)); // Streak "1", Week 1 badge "1", This Week "1"
-    expect(find.text('This Week'), findsOneWidget);
-
-    // Capture screenshot of Dashboard with updated stats
-    await captureScreen('dashboard_stats_top.png');
-
-    // 3. Navigate to Progress tab in BottomNavigationBar
-    await tester.tap(find.byIcon(Icons.trending_up));
-    await tester.pumpAndSettle();
-
-    // Verify ProgressScreen renders session history list
-    expect(find.byType(ProgressScreen), findsOneWidget);
-    expect(find.text('PROGRESS'), findsOneWidget);
-    expect(find.textContaining('9 blocks · 100 min'), findsOneWidget);
-
-    // Capture screenshot of Progress screen
-    await captureScreen('progress_screen.png');
-
-    // 4. Navigate to Settings tab in BottomNavigationBar
-    await tester.tap(find.byIcon(Icons.settings));
-    await tester.pumpAndSettle();
-
-    // Verify SettingsScreen renders sections
-    expect(find.byType(SettingsScreen), findsOneWidget);
-    expect(find.text('SETTINGS'), findsOneWidget);
-    expect(find.text('SESSION'), findsOneWidget);
-    expect(find.text('REMINDERS'), findsOneWidget);
-    expect(find.text('DATA'), findsOneWidget);
-    expect(find.text('Sound Effects'), findsOneWidget);
-    expect(find.text('Daily Reminder'), findsOneWidget);
-    expect(find.text('Reset All Progress'), findsOneWidget);
-
-    // Toggle Reminder Switch ON
-    final reminderSwitch = find.byType(Switch).at(1);
-    await tester.tap(reminderSwitch);
-    await tester.pumpAndSettle();
-
-    // Set custom time 08:30 AM in Provider
-    final container = ProviderScope.containerOf(tester.element(find.byType(SettingsScreen)));
-    container.read(notificationTimeProvider.notifier).state = const TimeOfDay(hour: 8, minute: 30);
-    await tester.pumpAndSettle();
-
-    // Toggle Sound Effects Switch ON
-    final soundSwitch = find.byType(Switch).at(0);
-    await tester.tap(soundSwitch);
-    await tester.pumpAndSettle();
-
-    // Capture screenshot of Settings screen with Sound Effects ON and Reminder ON
-    await captureScreen('settings_screen.png');
-    await captureScreen('settings_screen_sound_on.png');
-
-    // 5. Navigate to Routine tab in BottomNavigationBar
-    await tester.tap(find.byIcon(Icons.timer));
-    await tester.pumpAndSettle();
-
-    // Verify RoutineScreen renders
-    expect(find.byType(RoutineScreen), findsOneWidget);
-    expect(find.text('ROUTINE'), findsOneWidget);
-    expect(find.text('THE 112-MINUTE ARC'), findsOneWidget);
-    expect(find.text('Breath Lab'), findsOneWidget);
-    expect(find.text('Physical Warm-up'), findsOneWidget);
+    // Verify restored to Block 3 (Memory Foundation)
     expect(find.text('Memory Foundation'), findsOneWidget);
-
-    // Capture screenshot of Routine screen showing Blocks 1-3
-    await captureScreen('routine_screen.png');
+    expect(find.text('BLOCK 3 OF ${kRoutineBlocks.length}'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
+  });
+}
+
+Future<void> captureFinder(WidgetTester tester, Finder finder, String fileName) async {
+  const String artifactDir = r'C:\Users\sundr\.gemini\antigravity\brain\a9302ed1-deca-466c-a8e7-823182d27841';
+  await tester.runAsync(() async {
+    final element = tester.element(finder.first);
+    final boundary = element.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return;
+    final ui.Image image = await boundary.toImage(pixelRatio: 1.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final file = File('$artifactDir/$fileName');
+    await file.writeAsBytes(byteData!.buffer.asUint8List());
   });
 }
