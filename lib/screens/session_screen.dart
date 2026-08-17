@@ -6,6 +6,7 @@ import '../core/constants.dart';
 import '../providers/database_provider.dart';
 import '../database/database.dart';
 import '../services/sound_service.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import 'session_completion_screen.dart';
 
@@ -27,6 +28,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   @override
   void initState() {
     super.initState();
+    unawaited(WakelockPlus.enable().catchError((_) {}));
     _currentIndex = widget.startBlockIndex;
     _secondsRemaining = kRoutineBlocks[_currentIndex].durationMinutes * 60;
     if (kRoutineBlocks[_currentIndex].subSteps != null) {
@@ -200,6 +202,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
   @override
   void dispose() {
+    unawaited(WakelockPlus.disable().catchError((_) {}));
     _timer?.cancel();
     super.dispose();
   }

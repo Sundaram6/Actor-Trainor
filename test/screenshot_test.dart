@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -11,7 +10,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/evening_load_screen.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,32 +72,11 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 27: Evening Load Scene Text View Mode', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 28: Session Screen with Timer Running and Wakelock', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
-    // Insert an active evening load
-    await testDb.into(testDb.eveningLoads).insert(
-      EveningLoadsCompanion(
-        createdAt: drift.Value(DateTime.now()),
-        title: const drift.Value('Hamlet — To Be Or Not To Be'),
-        content: const drift.Value(
-          'To be, or not to be, that is the question:\n'
-          'Whether \'tis nobler in the mind to suffer\n'
-          'The slings and arrows of outrageous fortune,\n'
-          'Or to take arms against a sea of troubles\n'
-          'And by opposing end them.\n\n'
-          'To die—to sleep,\n'
-          'No more; and by a sleep to say we end\n'
-          'The heart-ache and the thousand natural shocks\n'
-          'That flesh is heir to: \'tis a consummation\n'
-          'Devoutly to be wish\'d.',
-        ),
-        isActive: const drift.Value(true),
-      ),
-    );
 
     final GlobalKey boundaryKey = GlobalKey();
 
@@ -113,7 +91,7 @@ void main() {
           theme: appTheme,
           home: RepaintBoundary(
             key: boundaryKey,
-            child: const EveningLoadScreen(),
+            child: const SessionScreen(),
           ),
         ),
       ),
@@ -121,15 +99,22 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Verify ViewMode renders scene text and metadata
-    expect(find.text('EVENING LOAD'), findsOneWidget);
-    expect(find.text('Hamlet — To Be Or Not To Be'), findsOneWidget);
-    expect(find.textContaining('Added today'), findsOneWidget);
-    expect(find.textContaining('To be, or not to be'), findsOneWidget);
-    expect(find.text('DONE'), findsOneWidget);
+    // Verify SessionScreen renders Block 1 (Breath Lab)
+    expect(find.text('SESSION'), findsOneWidget);
+    expect(find.text('Diaphragmatic Breathing'), findsOneWidget);
+    expect(find.text('BLOCK 1 OF ${kRoutineBlocks.length}'), findsOneWidget);
 
-    // Capture screenshot of ViewMode
-    await captureBoundary(tester, boundaryKey, 'evening_load_view_mode.png');
+    // Tap Play button to start timer
+    await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    // Verify timer is running (shows pause icon and remaining time decremented)
+    expect(find.byIcon(Icons.pause), findsOneWidget);
+    expect(find.text('02:29'), findsOneWidget);
+
+    // Capture screenshot of Session screen with timer running
+    await captureBoundary(tester, boundaryKey, 'session_active_timer.png');
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
