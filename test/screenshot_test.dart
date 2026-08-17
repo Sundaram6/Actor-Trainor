@@ -11,6 +11,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
+import 'package:the_instrument/screens/routine_screen.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
 import 'package:the_instrument/screens/settings_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
@@ -200,6 +201,21 @@ void main() {
     // Capture screenshot of Settings screen with Sound Effects ON and Reminder ON
     await captureScreen('settings_screen.png');
     await captureScreen('settings_screen_sound_on.png');
+
+    // 5. Navigate to Routine tab in BottomNavigationBar
+    await tester.tap(find.byIcon(Icons.timer));
+    await tester.pumpAndSettle();
+
+    // Verify RoutineScreen renders
+    expect(find.byType(RoutineScreen), findsOneWidget);
+    expect(find.text('ROUTINE'), findsOneWidget);
+    expect(find.text('THE 112-MINUTE ARC'), findsOneWidget);
+    expect(find.text('Breath Lab'), findsOneWidget);
+    expect(find.text('Physical Warm-up'), findsOneWidget);
+    expect(find.text('Memory Foundation'), findsOneWidget);
+
+    // Capture screenshot of Routine screen showing Blocks 1-3
+    await captureScreen('routine_screen.png');
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));

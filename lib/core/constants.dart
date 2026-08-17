@@ -301,3 +301,5 @@ const List<BlockConfig> kRoutineBlocks = [
     ],
   ),
 ];
+
+const List<BlockConfig> allBlocks = kRoutineBlocks;
