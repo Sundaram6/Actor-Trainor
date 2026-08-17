@@ -29,12 +29,11 @@ class DailyProgress extends Table {
 }
 
 class EveningLoads extends Table {
-  DateTimeColumn get date => dateTime()();
-  TextColumn get scriptText => text()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-
-  @override
-  Set<Column> get primaryKey => {date};
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get title => text()();
+  TextColumn get content => text()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }
 
 @DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads])
@@ -111,12 +110,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // Evening load queries
-  Future<EveningLoad?> getEveningLoad(DateTime date) {
-    final d = DateTime(date.year, date.month, date.day);
-    return (select(eveningLoads)..where((e) => e.date.equals(d))).getSingleOrNull();
+  Future<EveningLoad?> getActiveEveningLoad() {
+    return (select(eveningLoads)
+          ..where((e) => e.isActive.equals(true))
+          ..orderBy([(e) => OrderingTerm.desc(e.createdAt)])
+          ..limit(1))
+        .getSingleOrNull();
   }
 
-  Future<int> upsertEveningLoad(EveningLoadsCompanion entry) {
-    return into(eveningLoads).insertOnConflictUpdate(entry);
+  Future<int> insertEveningLoad(EveningLoadsCompanion entry) {
+    return into(eveningLoads).insert(entry);
   }
 }

@@ -1011,25 +1011,18 @@ class $EveningLoadsTable extends EveningLoads
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $EveningLoadsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
-    'date',
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _scriptTextMeta = const VerificationMeta(
-    'scriptText',
-  );
-  @override
-  late final GeneratedColumn<String> scriptText = GeneratedColumn<String>(
-    'script_text',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1040,11 +1033,51 @@ class $EveningLoadsTable extends EveningLoads
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
   );
   @override
-  List<GeneratedColumn> get $columns => [date, scriptText, createdAt];
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    title,
+    content,
+    isActive,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1057,48 +1090,67 @@ class $EveningLoadsTable extends EveningLoads
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('date')) {
-      context.handle(
-        _dateMeta,
-        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_dateMeta);
-    }
-    if (data.containsKey('script_text')) {
-      context.handle(
-        _scriptTextMeta,
-        scriptText.isAcceptableOrUnknown(data['script_text']!, _scriptTextMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_scriptTextMeta);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
     }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {date};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   EveningLoad map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return EveningLoad(
-      date: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}date'],
-      )!,
-      scriptText: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}script_text'],
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
       )!,
     );
   }
@@ -1110,28 +1162,36 @@ class $EveningLoadsTable extends EveningLoads
 }
 
 class EveningLoad extends DataClass implements Insertable<EveningLoad> {
-  final DateTime date;
-  final String scriptText;
+  final int id;
   final DateTime createdAt;
+  final String title;
+  final String content;
+  final bool isActive;
   const EveningLoad({
-    required this.date,
-    required this.scriptText,
+    required this.id,
     required this.createdAt,
+    required this.title,
+    required this.content,
+    required this.isActive,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['date'] = Variable<DateTime>(date);
-    map['script_text'] = Variable<String>(scriptText);
+    map['id'] = Variable<int>(id);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['title'] = Variable<String>(title);
+    map['content'] = Variable<String>(content);
+    map['is_active'] = Variable<bool>(isActive);
     return map;
   }
 
   EveningLoadsCompanion toCompanion(bool nullToAbsent) {
     return EveningLoadsCompanion(
-      date: Value(date),
-      scriptText: Value(scriptText),
+      id: Value(id),
       createdAt: Value(createdAt),
+      title: Value(title),
+      content: Value(content),
+      isActive: Value(isActive),
     );
   }
 
@@ -1141,121 +1201,144 @@ class EveningLoad extends DataClass implements Insertable<EveningLoad> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return EveningLoad(
-      date: serializer.fromJson<DateTime>(json['date']),
-      scriptText: serializer.fromJson<String>(json['scriptText']),
+      id: serializer.fromJson<int>(json['id']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String>(json['content']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'date': serializer.toJson<DateTime>(date),
-      'scriptText': serializer.toJson<String>(scriptText),
+      'id': serializer.toJson<int>(id),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String>(content),
+      'isActive': serializer.toJson<bool>(isActive),
     };
   }
 
   EveningLoad copyWith({
-    DateTime? date,
-    String? scriptText,
+    int? id,
     DateTime? createdAt,
+    String? title,
+    String? content,
+    bool? isActive,
   }) => EveningLoad(
-    date: date ?? this.date,
-    scriptText: scriptText ?? this.scriptText,
+    id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
+    title: title ?? this.title,
+    content: content ?? this.content,
+    isActive: isActive ?? this.isActive,
   );
   EveningLoad copyWithCompanion(EveningLoadsCompanion data) {
     return EveningLoad(
-      date: data.date.present ? data.date.value : this.date,
-      scriptText: data.scriptText.present
-          ? data.scriptText.value
-          : this.scriptText,
+      id: data.id.present ? data.id.value : this.id,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('EveningLoad(')
-          ..write('date: $date, ')
-          ..write('scriptText: $scriptText, ')
-          ..write('createdAt: $createdAt')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('isActive: $isActive')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(date, scriptText, createdAt);
+  int get hashCode => Object.hash(id, createdAt, title, content, isActive);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is EveningLoad &&
-          other.date == this.date &&
-          other.scriptText == this.scriptText &&
-          other.createdAt == this.createdAt);
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.isActive == this.isActive);
 }
 
 class EveningLoadsCompanion extends UpdateCompanion<EveningLoad> {
-  final Value<DateTime> date;
-  final Value<String> scriptText;
+  final Value<int> id;
   final Value<DateTime> createdAt;
-  final Value<int> rowid;
+  final Value<String> title;
+  final Value<String> content;
+  final Value<bool> isActive;
   const EveningLoadsCompanion({
-    this.date = const Value.absent(),
-    this.scriptText = const Value.absent(),
+    this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.isActive = const Value.absent(),
   });
   EveningLoadsCompanion.insert({
-    required DateTime date,
-    required String scriptText,
-    this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : date = Value(date),
-       scriptText = Value(scriptText);
+    this.id = const Value.absent(),
+    required DateTime createdAt,
+    required String title,
+    required String content,
+    this.isActive = const Value.absent(),
+  }) : createdAt = Value(createdAt),
+       title = Value(title),
+       content = Value(content);
   static Insertable<EveningLoad> custom({
-    Expression<DateTime>? date,
-    Expression<String>? scriptText,
+    Expression<int>? id,
     Expression<DateTime>? createdAt,
-    Expression<int>? rowid,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<bool>? isActive,
   }) {
     return RawValuesInsertable({
-      if (date != null) 'date': date,
-      if (scriptText != null) 'script_text': scriptText,
+      if (id != null) 'id': id,
       if (createdAt != null) 'created_at': createdAt,
-      if (rowid != null) 'rowid': rowid,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (isActive != null) 'is_active': isActive,
     });
   }
 
   EveningLoadsCompanion copyWith({
-    Value<DateTime>? date,
-    Value<String>? scriptText,
+    Value<int>? id,
     Value<DateTime>? createdAt,
-    Value<int>? rowid,
+    Value<String>? title,
+    Value<String>? content,
+    Value<bool>? isActive,
   }) {
     return EveningLoadsCompanion(
-      date: date ?? this.date,
-      scriptText: scriptText ?? this.scriptText,
+      id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
-      rowid: rowid ?? this.rowid,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      isActive: isActive ?? this.isActive,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (date.present) {
-      map['date'] = Variable<DateTime>(date.value);
-    }
-    if (scriptText.present) {
-      map['script_text'] = Variable<String>(scriptText.value);
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
     }
     return map;
   }
@@ -1263,10 +1346,11 @@ class EveningLoadsCompanion extends UpdateCompanion<EveningLoad> {
   @override
   String toString() {
     return (StringBuffer('EveningLoadsCompanion(')
-          ..write('date: $date, ')
-          ..write('scriptText: $scriptText, ')
+          ..write('id: $id, ')
           ..write('createdAt: $createdAt, ')
-          ..write('rowid: $rowid')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('isActive: $isActive')
           ..write(')'))
         .toString();
   }
@@ -1857,17 +1941,19 @@ typedef $$DailyProgressTableProcessedTableManager =
     >;
 typedef $$EveningLoadsTableCreateCompanionBuilder =
     EveningLoadsCompanion Function({
-      required DateTime date,
-      required String scriptText,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
+      Value<int> id,
+      required DateTime createdAt,
+      required String title,
+      required String content,
+      Value<bool> isActive,
     });
 typedef $$EveningLoadsTableUpdateCompanionBuilder =
     EveningLoadsCompanion Function({
-      Value<DateTime> date,
-      Value<String> scriptText,
+      Value<int> id,
       Value<DateTime> createdAt,
-      Value<int> rowid,
+      Value<String> title,
+      Value<String> content,
+      Value<bool> isActive,
     });
 
 class $$EveningLoadsTableFilterComposer
@@ -1879,18 +1965,28 @@ class $$EveningLoadsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<DateTime> get date => $composableBuilder(
-    column: $table.date,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get scriptText => $composableBuilder(
-    column: $table.scriptText,
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1904,18 +2000,28 @@ class $$EveningLoadsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<DateTime> get date => $composableBuilder(
-    column: $table.date,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get scriptText => $composableBuilder(
-    column: $table.scriptText,
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -1929,16 +2035,20 @@ class $$EveningLoadsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<DateTime> get date =>
-      $composableBuilder(column: $table.date, builder: (column) => column);
-
-  GeneratedColumn<String> get scriptText => $composableBuilder(
-    column: $table.scriptText,
-    builder: (column) => column,
-  );
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
 }
 
 class $$EveningLoadsTableTableManager
@@ -1972,27 +2082,31 @@ class $$EveningLoadsTableTableManager
               $$EveningLoadsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<DateTime> date = const Value.absent(),
-                Value<String> scriptText = const Value.absent(),
+                Value<int> id = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
               }) => EveningLoadsCompanion(
-                date: date,
-                scriptText: scriptText,
+                id: id,
                 createdAt: createdAt,
-                rowid: rowid,
+                title: title,
+                content: content,
+                isActive: isActive,
               ),
           createCompanionCallback:
               ({
-                required DateTime date,
-                required String scriptText,
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                required DateTime createdAt,
+                required String title,
+                required String content,
+                Value<bool> isActive = const Value.absent(),
               }) => EveningLoadsCompanion.insert(
-                date: date,
-                scriptText: scriptText,
+                id: id,
                 createdAt: createdAt,
-                rowid: rowid,
+                title: title,
+                content: content,
+                isActive: isActive,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

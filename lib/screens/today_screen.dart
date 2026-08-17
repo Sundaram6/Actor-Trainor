@@ -192,9 +192,7 @@ class TodayScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 Consumer(
                   builder: (context, ref, _) {
-                    final now = DateTime.now();
-                    final tomorrow = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-                    final loadAsync = ref.watch(eveningLoadProvider(tomorrow));
+                    final loadAsync = ref.watch(activeEveningLoadProvider);
 
                     return InkWell(
                       onTap: () {
@@ -240,9 +238,7 @@ class TodayScreen extends ConsumerWidget {
                                   Text(
                                     loadAsync.when(
                                       data: (load) => load != null
-                                          ? load.scriptText.length > 30
-                                              ? '${load.scriptText.substring(0, 30)}...'
-                                              : load.scriptText
+                                          ? load.title
                                           : 'Tap to prepare tomorrow\'s lines',
                                       loading: () => 'Tap to prepare tomorrow\'s lines',
                                       error: (error, stack) => 'Tap to prepare tomorrow\'s lines',
