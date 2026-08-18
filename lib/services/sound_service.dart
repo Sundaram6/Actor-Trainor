@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/settings_screen.dart';
 
@@ -50,3 +51,27 @@ final soundServiceProvider = Provider<SoundService>((ref) {
   service.setEnabled(enabled);
   return service;
 });
+
+Future<void> hapticLight({bool enabled = true}) async {
+  if (enabled) {
+    try {
+      await HapticFeedback.lightImpact();
+    } catch (_) {}
+  }
+}
+
+Future<void> hapticMedium({bool enabled = true}) async {
+  if (enabled) {
+    try {
+      await HapticFeedback.mediumImpact();
+    } catch (_) {}
+  }
+}
+
+Future<void> hapticSuccess({bool enabled = true}) async {
+  if (enabled) {
+    try {
+      await HapticFeedback.heavyImpact();
+    } catch (_) {}
+  }
+}

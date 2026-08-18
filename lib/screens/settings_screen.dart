@@ -9,6 +9,7 @@ import '../services/sound_service.dart';
 import 'progress_screen.dart';
 
 final soundEnabledProvider = StateProvider<bool>((ref) => true);
+final hapticsEnabledProvider = StateProvider<bool>((ref) => true);
 final notificationEnabledProvider = StateProvider<bool>((ref) => false);
 final notificationTimeProvider = StateProvider<TimeOfDay>((ref) => const TimeOfDay(hour: 7, minute: 0));
 
@@ -29,6 +30,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final sound = prefs.getBool('soundEnabled') ?? true;
+    final haptics = prefs.getBool('haptics_enabled') ?? true;
     final notif = prefs.getBool('notificationEnabled') ?? false;
     final hour = prefs.getInt('notificationHour') ?? 7;
     final minute = prefs.getInt('notificationMinute') ?? 0;
@@ -36,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (!mounted) return;
     ref.read(soundEnabledProvider.notifier).state = sound;
+    ref.read(hapticsEnabledProvider.notifier).state = haptics;
     ref.read(notificationEnabledProvider.notifier).state = notif;
     ref.read(notificationTimeProvider.notifier).state = time;
 
@@ -47,6 +50,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await prefs.setBool('soundEnabled', value);
     ref.read(soundEnabledProvider.notifier).state = value;
     SoundService.enabled = value;
+  }
+
+  Future<void> _saveHaptics(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('haptics_enabled', value);
+    ref.read(hapticsEnabledProvider.notifier).state = value;
   }
 
   Future<void> _saveNotification(bool value) async {
@@ -84,6 +93,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final soundOn = ref.watch(soundEnabledProvider);
+    final hapticsOn = ref.watch(hapticsEnabledProvider);
     final notifOn = ref.watch(notificationEnabledProvider);
     final notifTime = ref.watch(notificationTimeProvider);
 
@@ -114,6 +124,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: Switch(
               value: soundOn,
               onChanged: _saveSound,
+              activeThumbColor: const Color(0xFFD4AF37),
+              activeTrackColor: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.vibration,
+            label: 'Haptic Feedback',
+            subtitle: 'Vibrate on block & sub-step transitions',
+            trailing: Switch(
+              value: hapticsOn,
+              onChanged: _saveHaptics,
               activeThumbColor: const Color(0xFFD4AF37),
               activeTrackColor: const Color(0xFFD4AF37).withValues(alpha: 0.3),
             ),

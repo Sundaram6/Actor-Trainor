@@ -9,6 +9,7 @@ import '../services/sound_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import 'session_completion_screen.dart';
+import 'settings_screen.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
   final int startBlockIndex;
@@ -45,7 +46,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       final blockName = saved.blockIndex < kRoutineBlocks.length
           ? kRoutineBlocks[saved.blockIndex].name
           : 'Block ${saved.blockIndex + 1}';
-      final resume = await showDialog<bool>(
+      showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => RepaintBoundary(
@@ -59,36 +60,40 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
               'Resume Session?',
               style: TextStyle(
                 color: Color(0xFFD4AF37),
-                fontSize: 18,
                 fontWeight: FontWeight.w700,
+                fontSize: 18,
               ),
             ),
             content: Text(
               'You have an unfinished session in $blockName. Resume where you left off?',
-              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () async {
+                  await SessionStateService().clearState();
+                  if (mounted) Navigator.pop(context);
+                },
                 child: const Text('START FRESH', style: TextStyle(color: Colors.white54)),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('RESUME', style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = saved.blockIndex;
+                    _subStepIndex = saved.stepIndex;
+                    _secondsRemaining = saved.remainingSeconds;
+                  });
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'RESUME',
+                  style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
         ),
       );
-      if (resume == true && mounted) {
-        setState(() {
-          _currentIndex = saved.blockIndex;
-          _subStepIndex = saved.stepIndex;
-          _secondsRemaining = saved.remainingSeconds;
-        });
-      } else {
-        await SessionStateService().clearState();
-      }
     }
   }
 
@@ -96,6 +101,11 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     if (_isRunning) {
       _timer?.cancel();
       setState(() => _isRunning = false);
+      SessionStateService().saveState(
+        blockIndex: _currentIndex,
+        stepIndex: _subStepIndex,
+        remainingSeconds: _secondsRemaining,
+      );
     } else {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (_secondsRemaining > 0) {
@@ -111,6 +121,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
           final block = kRoutineBlocks[_currentIndex];
           final hasSubSteps = block.subSteps != null;
           if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
+            final hapticsOn = ref.read(hapticsEnabledProvider);
+            hapticLight(enabled: hapticsOn);
             ref.read(soundServiceProvider).playTransitionTone();
             setState(() {
               _subStepIndex++;
@@ -133,6 +145,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   }
 
   void _nextBlock() {
+    final hapticsOn = ref.read(hapticsEnabledProvider);
+    hapticMedium(enabled: hapticsOn);
     ref.read(soundServiceProvider).playTransitionTone();
     _timer?.cancel();
     if (_currentIndex < kRoutineBlocks.length - 1) {
@@ -154,6 +168,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   }
 
   Future<void> _onSessionComplete() async {
+    final hapticsOn = ref.read(hapticsEnabledProvider);
+    hapticSuccess(enabled: hapticsOn);
     ref.read(soundServiceProvider).playCompletionTone();
     _timer?.cancel();
     await SessionStateService().clearState();
