@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -73,76 +74,67 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 32: Block Skip Confirmation Dialog', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 33: Background Timer Accuracy', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final GlobalKey boundaryKey = GlobalKey();
+    DateTime mockNow = DateTime(2026, 8, 19, 10, 0, 0);
 
-    // Start on Block 2 (index 1: Physical Warm-up)
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(testDb),
-          soundServiceProvider.overrideWithValue(NoopSoundService()),
-        ],
-        child: MaterialApp(
-          title: appTitle,
-          debugShowCheckedModeBanner: false,
-          theme: appTheme,
-          builder: (context, child) => RepaintBoundary(
-            key: boundaryKey,
-            child: child ?? const SizedBox(),
+    await withClock(Clock(() => mockNow), () async {
+      // Start on Block 1 (Breath Lab: 02:30 on Step 1)
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(testDb),
+            soundServiceProvider.overrideWithValue(NoopSoundService()),
+          ],
+          child: MaterialApp(
+            title: appTitle,
+            debugShowCheckedModeBanner: false,
+            theme: appTheme,
+            builder: (context, child) => RepaintBoundary(
+              key: boundaryKey,
+              child: child ?? const SizedBox(),
+            ),
+            home: const SessionScreen(startBlockIndex: 0),
           ),
-          home: const SessionScreen(startBlockIndex: 1),
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify session starts on Block 2: Physical Warm-up
-    expect(find.text('BLOCK 2 OF ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('Physical Warm-up'), findsOneWidget);
+      // Verify session starts on Block 1 with 02:30
+      expect(find.text('BLOCK 1 OF ${kRoutineBlocks.length}'), findsOneWidget);
+      expect(find.text('02:30'), findsOneWidget);
 
-    // Tap Skip Block button (fast_forward icon)
-    final skipBlockBtn = find.byIcon(Icons.fast_forward);
-    expect(skipBlockBtn, findsOneWidget);
-    await tester.tap(skipBlockBtn);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      // Tap Play to start timer
+      final playBtn = find.byIcon(Icons.play_arrow);
+      expect(playBtn, findsWidgets);
+      await tester.tap(playBtn.first);
+      await tester.pump();
 
-    // Verify Skip Block confirmation dialog appears
-    expect(find.text('Skip Block?'), findsOneWidget);
-    expect(find.textContaining('You are about to skip Physical Warm-up'), findsOneWidget);
-    expect(find.text('CANCEL'), findsOneWidget);
-    expect(find.text('SKIP'), findsOneWidget);
+      // Advance mock wall-clock time by 10 seconds and pump timer
+      mockNow = mockNow.add(const Duration(seconds: 10));
+      await tester.pump(const Duration(seconds: 1));
 
-    // Capture screenshot of the skip confirmation dialog
-    await captureBoundary(tester, boundaryKey, 'session_skip_block_dialog.png');
+      // Simulate backgrounding & returning
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 1));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    // Test Cancel button dismisses dialog without advancing
-    await tester.tap(find.text('CANCEL'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Skip Block?'), findsNothing);
-    expect(find.text('BLOCK 2 OF ${kRoutineBlocks.length}'), findsOneWidget);
+      // Verify timer accurately displays 02:20 from wall-clock math
+      expect(find.text('02:20'), findsOneWidget);
 
-    // Tap Skip Block button again and confirm with SKIP
-    await tester.tap(skipBlockBtn);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('SKIP'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      // Capture screenshot of the session screen with wall-clock countdown running
+      await captureBoundary(tester, boundaryKey, 'session_background_timer_accuracy.png');
 
-    // Verify next block (Block 3: Memory Foundation) loads
-    expect(find.text('BLOCK 3 OF ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('Memory Foundation'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
   });
 }

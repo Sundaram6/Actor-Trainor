@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -19,10 +20,14 @@ class SessionScreen extends ConsumerStatefulWidget {
   ConsumerState<SessionScreen> createState() => _SessionScreenState();
 }
 
-class _SessionScreenState extends ConsumerState<SessionScreen> {
+class _SessionScreenState extends ConsumerState<SessionScreen>
+    with WidgetsBindingObserver {
   late int _currentIndex;
   int _subStepIndex = 0;
   int _secondsRemaining = 0;
+  int _blockDurationSeconds = 0;
+  DateTime? _blockStartedAt;
+  DateTime? _pausedAt;
   Timer? _timer;
   bool _isRunning = false;
   bool _isPaused = false;
@@ -30,14 +35,37 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(WakelockPlus.enable().catchError((_) {}));
     _currentIndex = widget.startBlockIndex;
-    _secondsRemaining = kRoutineBlocks[_currentIndex].durationMinutes * 60;
-    if (kRoutineBlocks[_currentIndex].subSteps != null) {
+    final block = kRoutineBlocks[_currentIndex];
+    if (block.subSteps != null) {
       _subStepIndex = 0;
-      _secondsRemaining = kRoutineBlocks[_currentIndex].subSteps![0].durationSeconds;
+      _blockDurationSeconds = block.subSteps![0].durationSeconds;
+    } else {
+      _blockDurationSeconds = block.durationMinutes * 60;
     }
+    _secondsRemaining = _blockDurationSeconds;
+    _blockStartedAt = clock.now();
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkResumeState());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_isRunning && !_isPaused && _blockStartedAt != null) {
+        final elapsed = clock.now().difference(_blockStartedAt!).inSeconds;
+        final remaining = _blockDurationSeconds - elapsed;
+        if (remaining > 0) {
+          setState(() {
+            _secondsRemaining = remaining.clamp(0, _blockDurationSeconds);
+          });
+        } else {
+          _advanceBlockOrStep();
+        }
+      }
+    }
   }
 
   Future<void> _checkResumeState() async {
@@ -82,8 +110,38 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                   setState(() {
                     _currentIndex = saved.blockIndex;
                     _subStepIndex = saved.stepIndex;
-                    _secondsRemaining = saved.remainingSeconds;
-                    _isPaused = saved.isPaused;
+                    final block = kRoutineBlocks[_currentIndex];
+                    _blockDurationSeconds = saved.blockDurationSeconds ??
+                        (block.subSteps != null
+                            ? block.subSteps![_subStepIndex].durationSeconds
+                            : block.durationMinutes * 60);
+
+                    if (saved.isPaused) {
+                      _secondsRemaining = saved.remainingSeconds;
+                      _blockStartedAt = clock.now().subtract(
+                        Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+                      );
+                      _isPaused = true;
+                      _isRunning = false;
+                    } else if (saved.startedAt != null) {
+                      final elapsed = clock.now().difference(saved.startedAt!).inSeconds;
+                      final remaining = _blockDurationSeconds - elapsed;
+                      if (remaining > 0) {
+                        _secondsRemaining = remaining.clamp(0, _blockDurationSeconds);
+                        _blockStartedAt = saved.startedAt;
+                        _isPaused = false;
+                        _startTimer();
+                      } else {
+                        _secondsRemaining = 0;
+                        _advanceBlockOrStep();
+                      }
+                    } else {
+                      _secondsRemaining = saved.remainingSeconds;
+                      _blockStartedAt = clock.now().subtract(
+                        Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+                      );
+                      _isPaused = false;
+                    }
                   });
                   Navigator.pop(context);
                 },
@@ -180,6 +238,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                     stepIndex: _subStepIndex,
                     remainingSeconds: _secondsRemaining,
                     isPaused: true,
+                    startedAt: _blockStartedAt,
+                    blockDurationSeconds: _blockDurationSeconds,
                   );
                   if (dialogContext.mounted) {
                     Navigator.pop(dialogContext);
@@ -344,29 +404,44 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   }
 
   void _startTimer() {
+    _timer?.cancel();
+    _blockStartedAt ??= clock.now().subtract(
+      Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+    );
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_secondsRemaining > 0) {
-        setState(() => _secondsRemaining--);
+      if (_blockStartedAt == null) return;
+      final elapsed = clock.now().difference(_blockStartedAt!).inSeconds;
+      final remaining = _blockDurationSeconds - elapsed;
+      if (remaining > 0) {
+        setState(() => _secondsRemaining = remaining.clamp(0, _blockDurationSeconds));
         if (_secondsRemaining % 5 == 0) {
           SessionStateService().saveState(
             blockIndex: _currentIndex,
             stepIndex: _subStepIndex,
             remainingSeconds: _secondsRemaining,
+            isPaused: _isPaused,
+            startedAt: _blockStartedAt,
+            blockDurationSeconds: _blockDurationSeconds,
           );
         }
       } else {
-        final block = kRoutineBlocks[_currentIndex];
-        final hasSubSteps = block.subSteps != null;
-        if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
-          _nextSubStep();
-        } else if (_currentIndex < kRoutineBlocks.length - 1) {
-          _nextBlock();
-        } else {
-          _onSessionComplete();
-        }
+        setState(() => _secondsRemaining = 0);
+        _advanceBlockOrStep();
       }
     });
     setState(() => _isRunning = true);
+  }
+
+  void _advanceBlockOrStep() {
+    final block = kRoutineBlocks[_currentIndex];
+    final hasSubSteps = block.subSteps != null;
+    if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
+      _nextSubStep();
+    } else if (_currentIndex < kRoutineBlocks.length - 1) {
+      _nextBlock();
+    } else {
+      _onSessionComplete();
+    }
   }
 
   void _togglePauseResume() {
@@ -374,6 +449,15 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     if (_isPaused) {
       // Resume
       hapticLight(enabled: hapticsOn);
+      if (_pausedAt != null && _blockStartedAt != null) {
+        final pausedDuration = clock.now().difference(_pausedAt!);
+        _blockStartedAt = _blockStartedAt!.add(pausedDuration);
+        _pausedAt = null;
+      } else {
+        _blockStartedAt = clock.now().subtract(
+          Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+        );
+      }
       setState(() => _isPaused = false);
       _startTimer();
       SessionStateService().saveState(
@@ -381,10 +465,13 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         stepIndex: _subStepIndex,
         remainingSeconds: _secondsRemaining,
         isPaused: false,
+        startedAt: _blockStartedAt,
+        blockDurationSeconds: _blockDurationSeconds,
       );
     } else if (_isRunning) {
       // Pause
       hapticLight(enabled: hapticsOn);
+      _pausedAt = clock.now();
       _timer?.cancel();
       setState(() {
         _isRunning = false;
@@ -395,9 +482,14 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         stepIndex: _subStepIndex,
         remainingSeconds: _secondsRemaining,
         isPaused: true,
+        startedAt: _blockStartedAt,
+        blockDurationSeconds: _blockDurationSeconds,
       );
     } else {
       // First start
+      _blockStartedAt = clock.now().subtract(
+        Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+      );
       setState(() => _isPaused = false);
       _startTimer();
     }
@@ -410,12 +502,17 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final block = kRoutineBlocks[_currentIndex];
     setState(() {
       _subStepIndex++;
-      _secondsRemaining = block.subSteps![_subStepIndex].durationSeconds;
+      _blockDurationSeconds = block.subSteps![_subStepIndex].durationSeconds;
+      _secondsRemaining = _blockDurationSeconds;
+      _blockStartedAt = clock.now();
     });
     SessionStateService().saveState(
       blockIndex: _currentIndex,
       stepIndex: _subStepIndex,
       remainingSeconds: _secondsRemaining,
+      isPaused: _isPaused,
+      startedAt: _blockStartedAt,
+      blockDurationSeconds: _blockDurationSeconds,
     );
   }
 
@@ -430,15 +527,21 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         _currentIndex++;
         _subStepIndex = 0;
         final block = kRoutineBlocks[_currentIndex];
-        _secondsRemaining = block.subSteps != null
+        _blockDurationSeconds = block.subSteps != null
             ? block.subSteps![0].durationSeconds
             : block.durationMinutes * 60;
+        _secondsRemaining = _blockDurationSeconds;
+        _blockStartedAt = clock.now();
         _isRunning = false;
+        _isPaused = false;
       });
       SessionStateService().saveState(
         blockIndex: _currentIndex,
         stepIndex: _subStepIndex,
         remainingSeconds: _secondsRemaining,
+        isPaused: false,
+        startedAt: _blockStartedAt,
+        blockDurationSeconds: _blockDurationSeconds,
       );
     }
   }
@@ -450,7 +553,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     _timer?.cancel();
     await SessionStateService().clearState();
     final db = ref.read(databaseProvider);
-    final now = DateTime.now();
+    final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final totalMinutes = kRoutineBlocks.fold<int>(0, (s, b) => s + b.durationMinutes);
 
@@ -494,6 +597,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _timer?.cancel();
     super.dispose();
@@ -504,7 +608,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final current = kRoutineBlocks[_currentIndex];
     final total = kRoutineBlocks.fold<int>(0, (s, b) => s + b.durationMinutes);
     final elapsedMins = kRoutineBlocks.sublist(0, _currentIndex).fold<int>(0, (s, b) => s + b.durationMinutes) +
-        ((current.durationMinutes * 60 - _secondsRemaining) ~/ 60);
+        ((_blockDurationSeconds - _secondsRemaining) ~/ 60);
     final progress = total > 0 ? elapsedMins / total : 0.0;
     final isLastBlock = _currentIndex == kRoutineBlocks.length - 1;
     final hasSubSteps = current.subSteps != null;
