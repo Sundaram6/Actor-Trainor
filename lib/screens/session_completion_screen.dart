@@ -9,12 +9,14 @@ class SessionCompletionScreen extends ConsumerWidget {
   final int? totalMinutes;
   final int? blocksCompleted;
   final List<String>? blockOutcomes;
+  final String? intention;
 
   const SessionCompletionScreen({
     super.key,
     this.totalMinutes,
     this.blocksCompleted,
     this.blockOutcomes,
+    this.intention,
   });
 
   @override
@@ -62,7 +64,27 @@ class SessionCompletionScreen extends ConsumerWidget {
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 48),
+              if (intention?.isNotEmpty == true) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141419),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                  ),
+                  child: Text(
+                    '"$intention"',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 32),
               _StatRow(
                 label: 'Blocks Completed',
                 value: '$completedCount / ${kRoutineBlocks.length}',

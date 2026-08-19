@@ -10,7 +10,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/settings_screen.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/services/tts_service.dart';
@@ -54,7 +54,7 @@ void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'soundEnabled': true,
+      'soundEnabled': false,
       'haptics_enabled': true,
       'voice_instructions_enabled': true,
       'notificationEnabled': false,
@@ -75,7 +75,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 35: Settings Voice Instructions Toggle', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 36: Pre-Session Intention Setting Dialog', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -98,30 +98,34 @@ void main() {
             key: boundaryKey,
             child: child ?? const SizedBox(),
           ),
-          home: const SettingsScreen(),
+          home: const SessionScreen(startBlockIndex: 0),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Settings screen renders Voice Instructions toggle
-    expect(find.text('SETTINGS'), findsOneWidget);
-    expect(find.text('Voice Instructions'), findsOneWidget);
-    expect(find.text('Reads step instructions aloud'), findsOneWidget);
+    // Verify intention dialog is shown
+    expect(find.text('Set Your Intention'), findsOneWidget);
+    expect(find.text('What are you training today?'), findsOneWidget);
+    expect(find.text('START SESSION'), findsOneWidget);
+    expect(find.text('SKIP'), findsOneWidget);
 
-    // Verify switch is ON
-    final voiceFinder = find.widgetWithText(ListTile, 'Voice Instructions');
-    expect(voiceFinder, findsOneWidget);
-    final switchFinder = find.descendant(of: voiceFinder, matching: find.byType(Switch));
-    expect(switchFinder, findsOneWidget);
-    final Switch switchWidget = tester.widget(switchFinder);
-    expect(switchWidget.value, isTrue);
+    // Enter intention text
+    final textField = find.byType(TextField);
+    expect(textField, findsOneWidget);
+    await tester.enterText(textField, 'Vocal resonance for audition monologue');
+    await tester.pump();
 
-    // Capture screenshot of Settings screen with Voice Instructions toggle ON
-    await captureBoundary(tester, boundaryKey, 'settings_voice_instructions_on.png');
+    // Capture screenshot of intention dialog with text entered
+    await captureBoundary(tester, boundaryKey, 'session_intention_dialog.png');
 
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(milliseconds: 200));
+    // Tap START SESSION
+    await tester.tap(find.text('START SESSION'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify intention is displayed on the session screen
+    expect(find.text('"Vocal resonance for audition monologue"'), findsOneWidget);
   });
 }

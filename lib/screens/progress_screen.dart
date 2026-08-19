@@ -130,6 +130,17 @@ class ProgressScreen extends ConsumerWidget {
                               fontSize: 13,
                             ),
                           ),
+                          if (session.intention?.isNotEmpty == true) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              '"${session.intention}"',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 10),
                           // 9-block completion bar
                           Row(

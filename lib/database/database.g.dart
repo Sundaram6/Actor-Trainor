@@ -439,6 +439,17 @@ class $SessionRecordsTable extends SessionRecords
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _intentionMeta = const VerificationMeta(
+    'intention',
+  );
+  @override
+  late final GeneratedColumn<String> intention = GeneratedColumn<String>(
+    'intention',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -447,6 +458,7 @@ class $SessionRecordsTable extends SessionRecords
     totalMinutes,
     notes,
     blocksJson,
+    intention,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -508,6 +520,12 @@ class $SessionRecordsTable extends SessionRecords
         blocksJson.isAcceptableOrUnknown(data['blocks_json']!, _blocksJsonMeta),
       );
     }
+    if (data.containsKey('intention')) {
+      context.handle(
+        _intentionMeta,
+        intention.isAcceptableOrUnknown(data['intention']!, _intentionMeta),
+      );
+    }
     return context;
   }
 
@@ -541,6 +559,10 @@ class $SessionRecordsTable extends SessionRecords
         DriftSqlType.string,
         data['${effectivePrefix}blocks_json'],
       )!,
+      intention: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}intention'],
+      ),
     );
   }
 
@@ -557,6 +579,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
   final int totalMinutes;
   final String? notes;
   final String blocksJson;
+  final String? intention;
   const SessionRecord({
     required this.id,
     required this.completedAt,
@@ -564,6 +587,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
     required this.totalMinutes,
     this.notes,
     required this.blocksJson,
+    this.intention,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -576,6 +600,9 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
       map['notes'] = Variable<String>(notes);
     }
     map['blocks_json'] = Variable<String>(blocksJson);
+    if (!nullToAbsent || intention != null) {
+      map['intention'] = Variable<String>(intention);
+    }
     return map;
   }
 
@@ -589,6 +616,9 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
           ? const Value.absent()
           : Value(notes),
       blocksJson: Value(blocksJson),
+      intention: intention == null && nullToAbsent
+          ? const Value.absent()
+          : Value(intention),
     );
   }
 
@@ -604,6 +634,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
       totalMinutes: serializer.fromJson<int>(json['totalMinutes']),
       notes: serializer.fromJson<String?>(json['notes']),
       blocksJson: serializer.fromJson<String>(json['blocksJson']),
+      intention: serializer.fromJson<String?>(json['intention']),
     );
   }
   @override
@@ -616,6 +647,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
       'totalMinutes': serializer.toJson<int>(totalMinutes),
       'notes': serializer.toJson<String?>(notes),
       'blocksJson': serializer.toJson<String>(blocksJson),
+      'intention': serializer.toJson<String?>(intention),
     };
   }
 
@@ -626,6 +658,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
     int? totalMinutes,
     Value<String?> notes = const Value.absent(),
     String? blocksJson,
+    Value<String?> intention = const Value.absent(),
   }) => SessionRecord(
     id: id ?? this.id,
     completedAt: completedAt ?? this.completedAt,
@@ -633,6 +666,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
     totalMinutes: totalMinutes ?? this.totalMinutes,
     notes: notes.present ? notes.value : this.notes,
     blocksJson: blocksJson ?? this.blocksJson,
+    intention: intention.present ? intention.value : this.intention,
   );
   SessionRecord copyWithCompanion(SessionRecordsCompanion data) {
     return SessionRecord(
@@ -650,6 +684,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
       blocksJson: data.blocksJson.present
           ? data.blocksJson.value
           : this.blocksJson,
+      intention: data.intention.present ? data.intention.value : this.intention,
     );
   }
 
@@ -661,7 +696,8 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
           ..write('blocksCompleted: $blocksCompleted, ')
           ..write('totalMinutes: $totalMinutes, ')
           ..write('notes: $notes, ')
-          ..write('blocksJson: $blocksJson')
+          ..write('blocksJson: $blocksJson, ')
+          ..write('intention: $intention')
           ..write(')'))
         .toString();
   }
@@ -674,6 +710,7 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
     totalMinutes,
     notes,
     blocksJson,
+    intention,
   );
   @override
   bool operator ==(Object other) =>
@@ -684,7 +721,8 @@ class SessionRecord extends DataClass implements Insertable<SessionRecord> {
           other.blocksCompleted == this.blocksCompleted &&
           other.totalMinutes == this.totalMinutes &&
           other.notes == this.notes &&
-          other.blocksJson == this.blocksJson);
+          other.blocksJson == this.blocksJson &&
+          other.intention == this.intention);
 }
 
 class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
@@ -694,6 +732,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
   final Value<int> totalMinutes;
   final Value<String?> notes;
   final Value<String> blocksJson;
+  final Value<String?> intention;
   const SessionRecordsCompanion({
     this.id = const Value.absent(),
     this.completedAt = const Value.absent(),
@@ -701,6 +740,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
     this.totalMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.blocksJson = const Value.absent(),
+    this.intention = const Value.absent(),
   });
   SessionRecordsCompanion.insert({
     this.id = const Value.absent(),
@@ -709,6 +749,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
     required int totalMinutes,
     this.notes = const Value.absent(),
     this.blocksJson = const Value.absent(),
+    this.intention = const Value.absent(),
   }) : completedAt = Value(completedAt),
        blocksCompleted = Value(blocksCompleted),
        totalMinutes = Value(totalMinutes);
@@ -719,6 +760,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
     Expression<int>? totalMinutes,
     Expression<String>? notes,
     Expression<String>? blocksJson,
+    Expression<String>? intention,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -727,6 +769,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
       if (totalMinutes != null) 'total_minutes': totalMinutes,
       if (notes != null) 'notes': notes,
       if (blocksJson != null) 'blocks_json': blocksJson,
+      if (intention != null) 'intention': intention,
     });
   }
 
@@ -737,6 +780,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
     Value<int>? totalMinutes,
     Value<String?>? notes,
     Value<String>? blocksJson,
+    Value<String?>? intention,
   }) {
     return SessionRecordsCompanion(
       id: id ?? this.id,
@@ -745,6 +789,7 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
       totalMinutes: totalMinutes ?? this.totalMinutes,
       notes: notes ?? this.notes,
       blocksJson: blocksJson ?? this.blocksJson,
+      intention: intention ?? this.intention,
     );
   }
 
@@ -769,6 +814,9 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
     if (blocksJson.present) {
       map['blocks_json'] = Variable<String>(blocksJson.value);
     }
+    if (intention.present) {
+      map['intention'] = Variable<String>(intention.value);
+    }
     return map;
   }
 
@@ -780,7 +828,8 @@ class SessionRecordsCompanion extends UpdateCompanion<SessionRecord> {
           ..write('blocksCompleted: $blocksCompleted, ')
           ..write('totalMinutes: $totalMinutes, ')
           ..write('notes: $notes, ')
-          ..write('blocksJson: $blocksJson')
+          ..write('blocksJson: $blocksJson, ')
+          ..write('intention: $intention')
           ..write(')'))
         .toString();
   }
@@ -1630,6 +1679,7 @@ typedef $$SessionRecordsTableCreateCompanionBuilder =
       required int totalMinutes,
       Value<String?> notes,
       Value<String> blocksJson,
+      Value<String?> intention,
     });
 typedef $$SessionRecordsTableUpdateCompanionBuilder =
     SessionRecordsCompanion Function({
@@ -1639,6 +1689,7 @@ typedef $$SessionRecordsTableUpdateCompanionBuilder =
       Value<int> totalMinutes,
       Value<String?> notes,
       Value<String> blocksJson,
+      Value<String?> intention,
     });
 
 class $$SessionRecordsTableFilterComposer
@@ -1677,6 +1728,11 @@ class $$SessionRecordsTableFilterComposer
 
   ColumnFilters<String> get blocksJson => $composableBuilder(
     column: $table.blocksJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get intention => $composableBuilder(
+    column: $table.intention,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1719,6 +1775,11 @@ class $$SessionRecordsTableOrderingComposer
     column: $table.blocksJson,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get intention => $composableBuilder(
+    column: $table.intention,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SessionRecordsTableAnnotationComposer
@@ -1755,6 +1816,9 @@ class $$SessionRecordsTableAnnotationComposer
     column: $table.blocksJson,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get intention =>
+      $composableBuilder(column: $table.intention, builder: (column) => column);
 }
 
 class $$SessionRecordsTableTableManager
@@ -1796,6 +1860,7 @@ class $$SessionRecordsTableTableManager
                 Value<int> totalMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String> blocksJson = const Value.absent(),
+                Value<String?> intention = const Value.absent(),
               }) => SessionRecordsCompanion(
                 id: id,
                 completedAt: completedAt,
@@ -1803,6 +1868,7 @@ class $$SessionRecordsTableTableManager
                 totalMinutes: totalMinutes,
                 notes: notes,
                 blocksJson: blocksJson,
+                intention: intention,
               ),
           createCompanionCallback:
               ({
@@ -1812,6 +1878,7 @@ class $$SessionRecordsTableTableManager
                 required int totalMinutes,
                 Value<String?> notes = const Value.absent(),
                 Value<String> blocksJson = const Value.absent(),
+                Value<String?> intention = const Value.absent(),
               }) => SessionRecordsCompanion.insert(
                 id: id,
                 completedAt: completedAt,
@@ -1819,6 +1886,7 @@ class $$SessionRecordsTableTableManager
                 totalMinutes: totalMinutes,
                 notes: notes,
                 blocksJson: blocksJson,
+                intention: intention,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

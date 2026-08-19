@@ -11,6 +11,7 @@ class SessionStateService {
   static const String _keyBlockStartedAt = 'session_block_started_at';
   static const String _keyBlockDurationSeconds = 'session_block_duration_seconds';
   static const String _keyBlockOutcomes = 'session_block_outcomes';
+  static const String _keyIntention = 'session_intention';
 
   Future<void> saveState({
     required int blockIndex,
@@ -20,6 +21,7 @@ class SessionStateService {
     DateTime? startedAt,
     int? blockDurationSeconds,
     List<String>? blockOutcomes,
+    String? intention,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyActive, true);
@@ -36,6 +38,9 @@ class SessionStateService {
     }
     if (blockOutcomes != null) {
       await prefs.setString(_keyBlockOutcomes, jsonEncode(blockOutcomes));
+    }
+    if (intention != null) {
+      await prefs.setString(_keyIntention, intention);
     }
   }
 
@@ -73,6 +78,7 @@ class SessionStateService {
           : null,
       blockDurationSeconds: prefs.getInt(_keyBlockDurationSeconds),
       blockOutcomes: blockOutcomes,
+      intention: prefs.getString(_keyIntention),
     );
   }
 
@@ -87,6 +93,7 @@ class SessionStateService {
     await prefs.remove(_keyBlockStartedAt);
     await prefs.remove(_keyBlockDurationSeconds);
     await prefs.remove(_keyBlockOutcomes);
+    await prefs.remove(_keyIntention);
   }
 }
 
@@ -98,6 +105,7 @@ class SessionSnapshot {
   final DateTime? startedAt;
   final int? blockDurationSeconds;
   final List<String>? blockOutcomes;
+  final String? intention;
 
   SessionSnapshot({
     required this.blockIndex,
@@ -107,5 +115,6 @@ class SessionSnapshot {
     this.startedAt,
     this.blockDurationSeconds,
     this.blockOutcomes,
+    this.intention,
   });
 }

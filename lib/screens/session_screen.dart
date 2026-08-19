@@ -34,6 +34,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   bool _isRunning = false;
   bool _isPaused = false;
   late List<String> _blockOutcomes;
+  String? _sessionIntention;
+  final TextEditingController _intentionController = TextEditingController();
 
   @override
   void initState() {
@@ -113,7 +115,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
               TextButton(
                 onPressed: () async {
                   await SessionStateService().clearState();
-                  if (mounted) Navigator.pop(context);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _showIntentionDialog();
+                  }
                 },
                 child: const Text('START FRESH', style: TextStyle(color: Colors.white54)),
               ),
@@ -122,6 +127,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                   setState(() {
                     _currentIndex = saved.blockIndex;
                     _subStepIndex = saved.stepIndex;
+                    _sessionIntention = saved.intention;
                     if (saved.blockOutcomes != null) {
                       _blockOutcomes = List<String>.from(saved.blockOutcomes!);
                     }
@@ -169,7 +175,128 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
           ),
         ),
       );
+    } else if (mounted) {
+      _showIntentionDialog();
     }
+  }
+
+  void _showIntentionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => RepaintBoundary(
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141419),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2A2A2A)),
+          ),
+          title: const Text(
+            'Set Your Intention',
+            style: TextStyle(
+              color: Color(0xFFD4AF37),
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'What are you training today?',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _intentionController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'e.g., Breath support for Shakespeare scene',
+                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A24),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFD4AF37),
+                        side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _sessionIntention = null;
+                        });
+                        Navigator.pop(dialogContext);
+                      },
+                      child: const Text(
+                        'SKIP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: const Color(0xFF0A0A0F),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        final text = _intentionController.text.trim();
+                        setState(() {
+                          _sessionIntention = text.isNotEmpty ? text : null;
+                        });
+                        Navigator.pop(dialogContext);
+                      },
+                      child: const Text(
+                        'START SESSION',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _showAbandonDialog() async {
@@ -258,6 +385,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                     startedAt: _blockStartedAt,
                     blockDurationSeconds: _blockDurationSeconds,
                     blockOutcomes: _blockOutcomes,
+                    intention: _sessionIntention,
                   );
 
                   // Record session progress in DB if any blocks finished
@@ -276,6 +404,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       blocksCompleted: drift.Value(completedBlocks),
                       totalMinutes: drift.Value(loggedMins),
                       blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
+                      intention: drift.Value(_sessionIntention),
                     ));
                   }
 
@@ -465,6 +594,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             startedAt: _blockStartedAt,
             blockDurationSeconds: _blockDurationSeconds,
             blockOutcomes: _blockOutcomes,
+            intention: _sessionIntention,
           );
         }
       } else {
@@ -513,6 +643,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         startedAt: _blockStartedAt,
         blockDurationSeconds: _blockDurationSeconds,
         blockOutcomes: _blockOutcomes,
+        intention: _sessionIntention,
       );
     } else if (_isRunning) {
       // Pause
@@ -532,6 +663,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         startedAt: _blockStartedAt,
         blockDurationSeconds: _blockDurationSeconds,
         blockOutcomes: _blockOutcomes,
+        intention: _sessionIntention,
       );
     } else {
       // First start
@@ -564,6 +696,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       startedAt: _blockStartedAt,
       blockDurationSeconds: _blockDurationSeconds,
       blockOutcomes: _blockOutcomes,
+      intention: _sessionIntention,
     );
   }
 
@@ -595,6 +728,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         startedAt: _blockStartedAt,
         blockDurationSeconds: _blockDurationSeconds,
         blockOutcomes: _blockOutcomes,
+        intention: _sessionIntention,
       );
     }
   }
@@ -625,6 +759,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       blocksCompleted: drift.Value(completedBlocksCount),
       totalMinutes: drift.Value(totalMinutes),
       blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
+      intention: drift.Value(_sessionIntention),
     ));
 
     await db.upsertDayProgress(DailyProgressCompanion(
@@ -641,6 +776,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             totalMinutes: totalMinutes,
             blocksCompleted: completedBlocksCount,
             blockOutcomes: _blockOutcomes,
+            intention: _sessionIntention,
           ),
         ),
       );
@@ -655,7 +791,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
 
   @override
   void dispose() {
-    ref.read(ttsServiceProvider).stop();
+    _intentionController.dispose();
+    try {
+      ref.read(ttsServiceProvider).stop();
+    } catch (_) {}
     WidgetsBinding.instance.removeObserver(this);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _timer?.cancel();
@@ -716,6 +855,26 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
                       style: AppTextStyles.caption,
                     ),
+                    if (_sessionIntention?.isNotEmpty == true) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: Text(
+                          '"$_sessionIntention"',
+                          style: const TextStyle(
+                            color: AppColors.goldAccent,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Container(
                       width: 72,
