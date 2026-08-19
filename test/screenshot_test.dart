@@ -10,6 +10,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/services/tts_service.dart';
@@ -50,11 +51,13 @@ Future<void> captureBoundary(WidgetTester tester, GlobalKey key, String fileName
 class AndroidHomeScreenWidgetPreview extends StatelessWidget {
   final String status;
   final int streak;
+  final bool showStartButton;
 
   const AndroidHomeScreenWidgetPreview({
     super.key,
     required this.status,
     required this.streak,
+    this.showStartButton = false,
   });
 
   @override
@@ -99,11 +102,11 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // 2x2 Widget Card matching updated widget_layout.xml
+              // 2x2 Widget Card matching updated widget_layout.xml with ▶ START
               Center(
                 child: Container(
                   width: 220,
-                  height: 130,
+                  height: showStartButton ? 160 : 130,
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1A),
                     borderRadius: BorderRadius.circular(16),
@@ -147,7 +150,7 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         'Streak: $streak',
                         style: TextStyle(
@@ -156,7 +159,7 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       const Text(
                         'The Instrument',
                         style: TextStyle(
@@ -165,6 +168,26 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                           letterSpacing: 0.8,
                         ),
                       ),
+                      if (showStartButton) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A1A),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFD4AF37), width: 1),
+                          ),
+                          child: const Text(
+                            '▶ START',
+                            style: TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -252,15 +275,15 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 43: Android Home Screen Widget IN PROGRESS & COMPLETED', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 44: Widget Quick Action ▶ START and SessionScreen launch', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final GlobalKey inProgressKey = GlobalKey();
+    final GlobalKey widgetKey = GlobalKey();
 
-    // 1. IN PROGRESS widget preview
+    // 1. Home screen widget with ▶ START action button
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -273,12 +296,13 @@ void main() {
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           builder: (context, child) => RepaintBoundary(
-            key: inProgressKey,
+            key: widgetKey,
             child: child ?? const SizedBox(),
           ),
           home: const AndroidHomeScreenWidgetPreview(
-            status: 'IN PROGRESS',
-            streak: 7,
+            status: 'NOT STARTED',
+            streak: 6,
+            showStartButton: true,
           ),
         ),
       ),
@@ -286,13 +310,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('IN PROGRESS'), findsOneWidget);
-    expect(find.text('Streak: 7'), findsOneWidget);
+    expect(find.text('NOT STARTED'), findsOneWidget);
+    expect(find.text('Streak: 6'), findsOneWidget);
+    expect(find.text('▶ START'), findsOneWidget);
 
-    await captureBoundary(tester, inProgressKey, 'home_screen_widget_in_progress.png');
+    await captureBoundary(tester, widgetKey, 'home_screen_widget_start_action.png');
 
-    // 2. COMPLETED widget preview
-    final GlobalKey completedKey = GlobalKey();
+    // 2. Direct SessionScreen launch from widget quick action
+    final GlobalKey sessionKey = GlobalKey();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -306,22 +331,25 @@ void main() {
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           builder: (context, child) => RepaintBoundary(
-            key: completedKey,
+            key: sessionKey,
             child: child ?? const SizedBox(),
           ),
-          home: const AndroidHomeScreenWidgetPreview(
-            status: 'COMPLETED',
-            streak: 8,
-          ),
+          home: const SessionScreen(startBlockIndex: 0),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('COMPLETED'), findsOneWidget);
-    expect(find.text('Streak: 8'), findsOneWidget);
+    // Dismiss intention dialog with SKIP if prompted
+    if (find.text('SKIP').evaluate().isNotEmpty) {
+      await tester.tap(find.text('SKIP'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
 
-    await captureBoundary(tester, completedKey, 'home_screen_widget_completed.png');
+    expect(find.text('SESSION'), findsOneWidget);
+
+    await captureBoundary(tester, sessionKey, 'session_screen_launched_from_widget.png');
   });
 }

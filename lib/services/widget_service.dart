@@ -9,6 +9,7 @@ class WidgetService {
     required bool isCompleted,
     required int streak,
     bool? inProgress,
+    bool showStartButton = false,
   }) async {
     try {
       final String status;
@@ -22,6 +23,7 @@ class WidgetService {
 
       await HomeWidget.saveWidgetData<String>('status', status);
       await HomeWidget.saveWidgetData<int>('streak', streak);
+      await HomeWidget.saveWidgetData<bool>('showStartButton', showStartButton);
       await HomeWidget.updateWidget(
         name: _androidWidgetName,
         androidName: _androidWidgetName,

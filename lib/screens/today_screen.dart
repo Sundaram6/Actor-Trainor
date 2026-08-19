@@ -17,6 +17,7 @@ class TodayScreen extends ConsumerWidget {
         WidgetService.update(
           isCompleted: stats.isCompleted,
           streak: stats.streak,
+          showStartButton: !stats.isCompleted,
         );
       });
     });
