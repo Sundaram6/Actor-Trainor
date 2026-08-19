@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../app.dart';
 import '../core/constants.dart';
 import '../providers/database_provider.dart';
@@ -13,6 +14,7 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
   final List<String>? blockOutcomes;
   final String? intention;
   final int? sessionRecordId;
+  final int? streak;
 
   const SessionCompletionScreen({
     super.key,
@@ -21,6 +23,7 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
     this.blockOutcomes,
     this.intention,
     this.sessionRecordId,
+    this.streak,
   });
 
   @override
@@ -164,6 +167,34 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                 ),
               ),
               const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: () async {
+                  final streak = widget.streak ?? (await ref.read(databaseProvider).getCurrentStreak());
+                  final durationMinutes = computedTotalMinutes;
+                  Share.share(
+                    'I just completed my 9/9 block acting routine on The Instrument! 🔥\n'
+                    'Streak: $streak days\n'
+                    'Duration: $durationMinutes min\n'
+                    'The instrument is tuned. 🎭',
+                    subject: 'The Instrument — Session Complete',
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFD4AF37)),
+                  foregroundColor: const Color(0xFFD4AF37),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text(
+                  'SHARE PROGRESS',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _handleReturn,
                 style: ElevatedButton.styleFrom(

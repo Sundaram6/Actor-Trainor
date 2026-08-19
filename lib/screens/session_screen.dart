@@ -787,6 +787,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             blockOutcomes: _blockOutcomes,
             intention: _sessionIntention,
             sessionRecordId: insertedId,
+            streak: updatedStreak,
           ),
         ),
       );

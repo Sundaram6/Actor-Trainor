@@ -10,9 +10,9 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/session_completion_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
-import 'package:the_instrument/services/tts_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -47,157 +47,128 @@ Future<void> captureBoundary(WidgetTester tester, GlobalKey key, String fileName
   });
 }
 
-class TheInstrumentAdaptiveIcon extends StatelessWidget {
-  final double size;
-  final double borderRadius;
+class AndroidShareSheetModalPreview extends StatelessWidget {
+  final String shareText;
 
-  const TheInstrumentAdaptiveIcon({
+  const AndroidShareSheetModalPreview({
     super.key,
-    this.size = 56.0,
-    this.borderRadius = 14.0,
+    required this.shareText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: const Color(0xFF222222), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Container(
-          width: size * 0.16,
-          height: size * 0.52,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD4AF37),
-            borderRadius: BorderRadius.circular(size * 0.03),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class HomeScreenAppDrawerPreview extends StatelessWidget {
-  const HomeScreenAppDrawerPreview({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F18),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top status bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '9:41',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Row(
-                    children: const [
-                      Icon(Icons.wifi, color: Colors.white, size: 16),
-                      SizedBox(width: 6),
-                      Icon(Icons.battery_full, color: Colors.white, size: 16),
-                    ],
+      backgroundColor: const Color(0x99000000), // Dimmed backdrop
+      body: Stack(
+        children: [
+          // Background completion screen preview
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.4,
+              child: Container(color: const Color(0xFF0D0D0D)),
+            ),
+          ),
+          // Bottom Share Sheet bottom-sheet dialog
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFF1E2026),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black54,
+                    blurRadius: 30,
+                    offset: Offset(0, -10),
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
-              // Search apps bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E212D),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFF2E3344)),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.search, color: Colors.white54, size: 20),
-                    SizedBox(width: 12),
-                    Text(
-                      'Search apps...',
-                      style: TextStyle(color: Colors.white38, fontSize: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 36),
-              // App Grid 4x3 with childAspectRatio
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 4,
-                  childAspectRatio: 0.72,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 16,
-                  children: [
-                    _AppGridItem(
-                      customIcon: const TheInstrumentAdaptiveIcon(size: 56),
-                      label: 'Instrument',
-                      isHighlighted: true,
-                    ),
-                    _AppGridItem(icon: Icons.camera_alt, label: 'Camera', color: Colors.purple),
-                    _AppGridItem(icon: Icons.photo, label: 'Photos', color: Colors.redAccent),
-                    _AppGridItem(icon: Icons.calendar_month, label: 'Calendar', color: Colors.blue),
-                    _AppGridItem(icon: Icons.map, label: 'Maps', color: Colors.green),
-                    _AppGridItem(icon: Icons.settings, label: 'Settings', color: Colors.grey),
-                    _AppGridItem(icon: Icons.chat, label: 'Messages', color: Colors.lightBlue),
-                    _AppGridItem(icon: Icons.mail, label: 'Email', color: Colors.amber),
-                  ],
-                ),
-              ),
-              // Bottom dock
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white38,
-                    borderRadius: BorderRadius.circular(2),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  // Title row
+                  Row(
+                    children: const [
+                      Icon(Icons.share, color: Color(0xFFD4AF37), size: 20),
+                      SizedBox(width: 10),
+                      Text(
+                        'Share via',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Spacer(),
+                      Icon(Icons.close, color: Colors.white54, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Pre-filled text preview card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF14151B),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF2C2F3B)),
+                    ),
+                    child: Text(
+                      shareText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // App targets row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _ShareTarget(icon: Icons.message, label: 'Messages', color: Colors.blue),
+                      _ShareTarget(icon: Icons.chat, label: 'WhatsApp', color: Colors.green),
+                      _ShareTarget(icon: Icons.copy, label: 'Copy Link', color: const Color(0xFFD4AF37)),
+                      _ShareTarget(icon: Icons.note_alt, label: 'Notes', color: Colors.orange),
+                      _ShareTarget(icon: Icons.more_horiz, label: 'More', color: Colors.grey),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _AppGridItem extends StatelessWidget {
-  final IconData? icon;
-  final Widget? customIcon;
+class _ShareTarget extends StatelessWidget {
+  final IconData icon;
   final String label;
-  final Color? color;
-  final bool isHighlighted;
+  final Color color;
 
-  const _AppGridItem({
-    this.icon,
-    this.customIcon,
+  const _ShareTarget({
+    required this.icon,
     required this.label,
-    this.color,
-    this.isHighlighted = false,
+    required this.color,
   });
 
   @override
@@ -205,262 +176,22 @@ class _AppGridItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        customIcon ??
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E212D),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF2E3344)),
-              ),
-              child: Icon(icon, color: color ?? Colors.white, size: 28),
-            ),
-        const SizedBox(height: 8),
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A2D3A),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF383C4D)),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 6),
         Text(
           label,
-          style: TextStyle(
-            color: isHighlighted ? const Color(0xFFD4AF37) : Colors.white70,
-            fontSize: 11,
-            fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
         ),
       ],
-    );
-  }
-}
-
-class AppSwitcherPreview extends StatelessWidget {
-  const AppSwitcherPreview({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF08090E),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-          child: Column(
-            children: [
-              // Top bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '9:41',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Row(
-                    children: const [
-                      Icon(Icons.wifi, color: Colors.white, size: 16),
-                      SizedBox(width: 6),
-                      Icon(Icons.battery_full, color: Colors.white, size: 16),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              // App Switcher Card with Title Bar containing Adaptive Icon
-              Expanded(
-                child: Center(
-                  child: Container(
-                    width: 310,
-                    height: 540,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF141419),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFF2A2A35), width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        // Task card title bar
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          color: const Color(0xFF1B1B22),
-                          child: Row(
-                            children: [
-                              const TheInstrumentAdaptiveIcon(
-                                size: 24,
-                                borderRadius: 6,
-                              ),
-                              const SizedBox(width: 10),
-                              const Text(
-                                'The Instrument',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const Spacer(),
-                              const Icon(Icons.more_vert, color: Colors.white54, size: 18),
-                            ],
-                          ),
-                        ),
-                        // Task Card Mini Screen Content
-                        Expanded(
-                          child: Container(
-                            color: const Color(0xFF0A0A0F),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'THE INSTRUMENT',
-                                  style: TextStyle(
-                                    color: Color(0xFFD4AF37),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    _MiniStat(label: 'Today', val: 'Not started'),
-                                    const SizedBox(width: 6),
-                                    _MiniStat(label: 'Streak', val: '7'),
-                                    const SizedBox(width: 6),
-                                    _MiniStat(label: 'This Week', val: '5'),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF141419),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: const Color(0xFF2A2A2A)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Center(
-                                          child: Text(
-                                            '1',
-                                            style: TextStyle(
-                                              color: Color(0xFFD4AF37),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: const [
-                                          Text(
-                                            'Week 1 • Day 1',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            '98 MINUTE ROUTINE',
-                                            style: TextStyle(
-                                              color: Colors.white38,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD4AF37),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      'START ROUTINE',
-                                      style: TextStyle(
-                                        color: Color(0xFF0A0A0F),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Clear all button
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E212D),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Text(
-                  'Clear all',
-                  style: TextStyle(color: Colors.white60, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String val;
-
-  const _MiniStat({required this.label, required this.val});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
-            const SizedBox(height: 2),
-            Text(val, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -492,54 +223,84 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 45: Adaptive Launcher Icon & App Switcher', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 46: Share Session Completion button and share sheet preview', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final GlobalKey drawerKey = GlobalKey();
+    final GlobalKey completionKey = GlobalKey();
 
-    // 1. Home screen / app drawer with adaptive launcher icon
+    // 1. SessionCompletionScreen with SHARE PROGRESS button
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: completionKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const SessionCompletionScreen(
+            totalMinutes: 98,
+            blocksCompleted: 9,
+            blockOutcomes: [
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+            ],
+            intention: 'Breath support and physical presence for Hamlet soliloquy',
+            streak: 7,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('SHARE PROGRESS'), findsOneWidget);
+    expect(find.text('RETURN TO DASHBOARD'), findsOneWidget);
+    expect(find.text('SESSION COMPLETE'), findsOneWidget);
+
+    await captureBoundary(tester, completionKey, 'session_completion_share_button.png');
+
+    // 2. Native Android share sheet preview with pre-filled brag text
+    final GlobalKey shareSheetKey = GlobalKey();
+
+    const String shareText =
+        'I just completed my 9/9 block acting routine on The Instrument! 🔥\n'
+        'Streak: 7 days\n'
+        'Duration: 98 min\n'
+        'The instrument is tuned. 🎭';
+
     await tester.pumpWidget(
       MaterialApp(
         title: appTitle,
         debugShowCheckedModeBanner: false,
         theme: appTheme,
         builder: (context, child) => RepaintBoundary(
-          key: drawerKey,
+          key: shareSheetKey,
           child: child ?? const SizedBox(),
         ),
-        home: const HomeScreenAppDrawerPreview(),
+        home: const AndroidShareSheetModalPreview(shareText: shareText),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Instrument'), findsOneWidget);
+    expect(find.text(shareText), findsOneWidget);
+    expect(find.text('Share via'), findsOneWidget);
 
-    await captureBoundary(tester, drawerKey, 'launcher_icon_home_screen.png');
-
-    // 2. App switcher / Recent apps view with adaptive icon in title bar
-    final GlobalKey switcherKey = GlobalKey();
-
-    await tester.pumpWidget(
-      MaterialApp(
-        title: appTitle,
-        debugShowCheckedModeBanner: false,
-        theme: appTheme,
-        builder: (context, child) => RepaintBoundary(
-          key: switcherKey,
-          child: child ?? const SizedBox(),
-        ),
-        home: const AppSwitcherPreview(),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('The Instrument'), findsOneWidget);
-
-    await captureBoundary(tester, switcherKey, 'launcher_icon_app_switcher.png');
+    await captureBoundary(tester, shareSheetKey, 'session_share_sheet_preview.png');
   });
 }
