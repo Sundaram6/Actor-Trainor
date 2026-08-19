@@ -99,7 +99,7 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // 2x2 Widget Card matching widget_layout.xml
+              // 2x2 Widget Card matching updated widget_layout.xml
               Center(
                 child: Container(
                   width: 220,
@@ -128,19 +128,21 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: status == 'Completed'
+                              color: status == 'COMPLETED'
                                   ? const Color(0xFFD4AF37)
-                                  : const Color(0xFF888888),
+                                  : (status == 'IN PROGRESS'
+                                      ? const Color(0xFFE5A93C)
+                                      : const Color(0xFF888888)),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            status.toUpperCase(),
+                            status,
                             style: const TextStyle(
                               color: Color(0xFFD4AF37),
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ],
@@ -154,12 +156,12 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       const Text(
                         'The Instrument',
                         style: TextStyle(
                           color: Colors.white30,
-                          fontSize: 10,
+                          fontSize: 11,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -250,13 +252,47 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 42: Android Home Screen Widget Preview', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 43: Android Home Screen Widget IN PROGRESS & COMPLETED', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final GlobalKey boundaryKey = GlobalKey();
+    final GlobalKey inProgressKey = GlobalKey();
+
+    // 1. IN PROGRESS widget preview
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+          soundServiceProvider.overrideWithValue(NoopSoundService()),
+          ttsServiceProvider.overrideWithValue(NoopTtsService()),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: inProgressKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const AndroidHomeScreenWidgetPreview(
+            status: 'IN PROGRESS',
+            streak: 7,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('IN PROGRESS'), findsOneWidget);
+    expect(find.text('Streak: 7'), findsOneWidget);
+
+    await captureBoundary(tester, inProgressKey, 'home_screen_widget_in_progress.png');
+
+    // 2. COMPLETED widget preview
+    final GlobalKey completedKey = GlobalKey();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -270,12 +306,12 @@ void main() {
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           builder: (context, child) => RepaintBoundary(
-            key: boundaryKey,
+            key: completedKey,
             child: child ?? const SizedBox(),
           ),
           home: const AndroidHomeScreenWidgetPreview(
-            status: 'Completed',
-            streak: 7,
+            status: 'COMPLETED',
+            streak: 8,
           ),
         ),
       ),
@@ -283,12 +319,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify widget preview elements
     expect(find.text('COMPLETED'), findsOneWidget);
-    expect(find.text('Streak: 7'), findsOneWidget);
-    expect(find.text('The Instrument'), findsOneWidget);
+    expect(find.text('Streak: 8'), findsOneWidget);
 
-    // Capture screenshot of Home Screen with The Instrument widget
-    await captureBoundary(tester, boundaryKey, 'home_screen_widget_preview.png');
+    await captureBoundary(tester, completedKey, 'home_screen_widget_completed.png');
   });
 }

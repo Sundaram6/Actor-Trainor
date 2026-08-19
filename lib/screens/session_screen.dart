@@ -14,6 +14,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import 'session_completion_screen.dart';
 import 'settings_screen.dart';
+import '../services/widget_service.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
   final int startBlockIndex;
@@ -580,6 +581,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       Duration(seconds: _blockDurationSeconds - _secondsRemaining),
     );
     _speakCurrentInstruction();
+    final db = ref.read(databaseProvider);
+    db.getCurrentStreak().then((streak) {
+      WidgetService.update(isCompleted: false, streak: streak, inProgress: true);
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_blockStartedAt == null) return;
       final elapsed = clock.now().difference(_blockStartedAt!).inSeconds;
@@ -768,6 +773,9 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       completed: const drift.Value(true),
       minutesLogged: drift.Value(totalMinutes),
     ));
+
+    final updatedStreak = await db.getCurrentStreak();
+    await WidgetService.update(isCompleted: true, streak: updatedStreak, inProgress: false);
 
     if (mounted) {
       Navigator.pushReplacement(

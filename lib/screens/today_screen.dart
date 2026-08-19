@@ -15,7 +15,7 @@ class TodayScreen extends ConsumerWidget {
     ref.listen<AsyncValue<DashboardStats>>(dashboardStatsProvider, (prev, next) {
       next.whenData((stats) {
         WidgetService.update(
-          status: stats.isCompleted ? 'Completed' : 'Not Started',
+          isCompleted: stats.isCompleted,
           streak: stats.streak,
         );
       });
