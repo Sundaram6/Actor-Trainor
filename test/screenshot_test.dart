@@ -10,7 +10,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/settings_screen.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,7 +73,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 29: Settings Screen with Haptic Feedback Toggle ON', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 30: Session Paused Overlay', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -92,26 +92,38 @@ void main() {
           theme: appTheme,
           home: RepaintBoundary(
             key: boundaryKey,
-            child: const SettingsScreen(),
+            child: const SessionScreen(),
           ),
         ),
       ),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Verify session screen renders with 3 control buttons
+    expect(find.text('SESSION'), findsOneWidget);
+    expect(find.text('BLOCK 1 OF ${kRoutineBlocks.length}'), findsOneWidget);
+
+    // Tap play to start the timer
+    final playButtons = find.byIcon(Icons.play_arrow);
+    expect(playButtons, findsWidgets);
+    await tester.tap(playButtons.first);
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Verify SettingsScreen renders Haptic Feedback section and tile
-    expect(find.text('SETTINGS'), findsOneWidget);
-    expect(find.text('Haptic Feedback'), findsOneWidget);
-    expect(find.text('Vibrate on block & sub-step transitions'), findsOneWidget);
+    // Now tap pause
+    final pauseButton = find.byIcon(Icons.pause);
+    expect(pauseButton, findsOneWidget);
+    await tester.tap(pauseButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
-    // Verify switch is ON
-    final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
-    expect(switches.length, 3); // Sound, Haptics, Daily Reminder
-    expect(switches[1].value, true);
+    // Verify PAUSED overlay is showing
+    expect(find.text('PAUSED'), findsOneWidget);
+    expect(find.text('TAP TO RESUME'), findsOneWidget);
 
-    // Capture screenshot of Settings screen with Haptic Feedback ON
-    await captureBoundary(tester, boundaryKey, 'settings_haptics_on.png');
+    // Capture screenshot of paused overlay
+    await captureBoundary(tester, boundaryKey, 'session_paused_overlay.png');
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));

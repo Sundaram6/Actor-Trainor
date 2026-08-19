@@ -25,6 +25,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
   int _secondsRemaining = 0;
   Timer? _timer;
   bool _isRunning = false;
+  bool _isPaused = false;
 
   @override
   void initState() {
@@ -82,6 +83,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                     _currentIndex = saved.blockIndex;
                     _subStepIndex = saved.stepIndex;
                     _secondsRemaining = saved.remainingSeconds;
+                    _isPaused = saved.isPaused;
                   });
                   Navigator.pop(context);
                 },
@@ -97,54 +99,84 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     }
   }
 
-  void _toggleTimer() {
-    if (_isRunning) {
-      _timer?.cancel();
-      setState(() => _isRunning = false);
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+        if (_secondsRemaining % 5 == 0) {
+          SessionStateService().saveState(
+            blockIndex: _currentIndex,
+            stepIndex: _subStepIndex,
+            remainingSeconds: _secondsRemaining,
+          );
+        }
+      } else {
+        final block = kRoutineBlocks[_currentIndex];
+        final hasSubSteps = block.subSteps != null;
+        if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
+          _nextSubStep();
+        } else if (_currentIndex < kRoutineBlocks.length - 1) {
+          _nextBlock();
+        } else {
+          _onSessionComplete();
+        }
+      }
+    });
+    setState(() => _isRunning = true);
+  }
+
+  void _togglePauseResume() {
+    final hapticsOn = ref.read(hapticsEnabledProvider);
+    if (_isPaused) {
+      // Resume
+      hapticLight(enabled: hapticsOn);
+      setState(() => _isPaused = false);
+      _startTimer();
       SessionStateService().saveState(
         blockIndex: _currentIndex,
         stepIndex: _subStepIndex,
         remainingSeconds: _secondsRemaining,
+        isPaused: false,
+      );
+    } else if (_isRunning) {
+      // Pause
+      hapticLight(enabled: hapticsOn);
+      _timer?.cancel();
+      setState(() {
+        _isRunning = false;
+        _isPaused = true;
+      });
+      SessionStateService().saveState(
+        blockIndex: _currentIndex,
+        stepIndex: _subStepIndex,
+        remainingSeconds: _secondsRemaining,
+        isPaused: true,
       );
     } else {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (_secondsRemaining > 0) {
-          setState(() => _secondsRemaining--);
-          if (_secondsRemaining % 5 == 0) {
-            SessionStateService().saveState(
-              blockIndex: _currentIndex,
-              stepIndex: _subStepIndex,
-              remainingSeconds: _secondsRemaining,
-            );
-          }
-        } else {
-          final block = kRoutineBlocks[_currentIndex];
-          final hasSubSteps = block.subSteps != null;
-          if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
-            final hapticsOn = ref.read(hapticsEnabledProvider);
-            hapticLight(enabled: hapticsOn);
-            ref.read(soundServiceProvider).playTransitionTone();
-            setState(() {
-              _subStepIndex++;
-              _secondsRemaining = block.subSteps![_subStepIndex].durationSeconds;
-            });
-            SessionStateService().saveState(
-              blockIndex: _currentIndex,
-              stepIndex: _subStepIndex,
-              remainingSeconds: _secondsRemaining,
-            );
-          } else if (_currentIndex < kRoutineBlocks.length - 1) {
-            _nextBlock();
-          } else {
-            _onSessionComplete();
-          }
-        }
-      });
-      setState(() => _isRunning = true);
+      // First start
+      setState(() => _isPaused = false);
+      _startTimer();
     }
   }
 
+  void _nextSubStep() {
+    final hapticsOn = ref.read(hapticsEnabledProvider);
+    hapticLight(enabled: hapticsOn);
+    ref.read(soundServiceProvider).playTransitionTone();
+    final block = kRoutineBlocks[_currentIndex];
+    setState(() {
+      _subStepIndex++;
+      _secondsRemaining = block.subSteps![_subStepIndex].durationSeconds;
+    });
+    SessionStateService().saveState(
+      blockIndex: _currentIndex,
+      stepIndex: _subStepIndex,
+      remainingSeconds: _secondsRemaining,
+    );
+  }
+
   void _nextBlock() {
+    if (_isPaused) return;
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticMedium(enabled: hapticsOn);
     ref.read(soundServiceProvider).playTransitionTone();
@@ -231,6 +263,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         ((current.durationMinutes * 60 - _secondsRemaining) ~/ 60);
     final progress = total > 0 ? elapsedMins / total : 0.0;
     final isLastBlock = _currentIndex == kRoutineBlocks.length - 1;
+    final hasSubSteps = current.subSteps != null;
+    final isLastSubStep = hasSubSteps ? _subStepIndex >= current.subSteps!.length - 1 : true;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -247,139 +281,224 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: AppColors.cardSurface,
-                  color: AppColors.goldAccent,
-                  minHeight: 6,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
-                style: AppTextStyles.caption,
-              ),
-              const SizedBox(height: 24),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.goldAccent.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '${_currentIndex + 1}',
-                    style: AppTextStyles.h1.copyWith(
-                      color: AppColors.goldAccent,
-                      fontSize: 36,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                current.subSteps != null
-                    ? current.subSteps![_subStepIndex].title
-                    : current.name,
-                style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                current.subSteps != null
-                    ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
-                    : '${current.durationMinutes} MINUTES',
-                style: AppTextStyles.caption,
-              ),
-              if (current.subSteps != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Text(
-                    current.subSteps![_subStepIndex].instruction,
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              Text(
-                _timeText,
-                style: AppTextStyles.h1.copyWith(
-                  fontSize: 64,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          children: [
+            // Main session content
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
                 children: [
-                  _ControlButton(
-                    icon: _isRunning ? Icons.pause : Icons.play_arrow,
-                    onPressed: _toggleTimer,
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: AppColors.cardSurface,
+                      color: AppColors.goldAccent,
+                      minHeight: 6,
+                    ),
                   ),
-                  const SizedBox(width: 24),
-                  _ControlButton(
-                    icon: isLastBlock ? Icons.check : Icons.skip_next,
-                    onPressed: isLastBlock ? _onSessionComplete : _nextBlock,
+                  const SizedBox(height: 8),
+                  Text(
+                    'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
+                    style: AppTextStyles.caption,
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              if (!isLastBlock) ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('UP NEXT', style: AppTextStyles.caption),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${_currentIndex + 2}',
-                        style: AppTextStyles.h2.copyWith(
+                  const SizedBox(height: 24),
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.goldAccent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${_currentIndex + 1}',
+                        style: AppTextStyles.h1.copyWith(
                           color: AppColors.goldAccent,
-                          fontSize: 18,
+                          fontSize: 36,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          kRoutineBlocks[_currentIndex + 1].name,
-                          style: AppTextStyles.body.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    hasSubSteps
+                        ? current.subSteps![_subStepIndex].title
+                        : current.name,
+                    style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    hasSubSteps
+                        ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
+                        : '${current.durationMinutes} MINUTES',
+                    style: AppTextStyles.caption,
+                  ),
+                  if (hasSubSteps) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardSurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Text(
+                        current.subSteps![_subStepIndex].instruction,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
                         ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  Text(
+                    _timeText,
+                    style: AppTextStyles.h1.copyWith(
+                      fontSize: 64,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // 3-button control row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Pause / Resume button
+                      _ControlButton(
+                        icon: _isPaused
+                            ? Icons.play_arrow
+                            : (_isRunning ? Icons.pause : Icons.play_arrow),
+                        onPressed: _togglePauseResume,
+                      ),
+                      const SizedBox(width: 24),
+                      // Next sub-step button
+                      _ControlButton(
+                        icon: Icons.skip_next,
+                        onPressed: _isPaused
+                            ? null
+                            : (hasSubSteps && !isLastSubStep
+                                ? _nextSubStep
+                                : null),
+                      ),
+                      const SizedBox(width: 24),
+                      // Skip block / Complete button
+                      _ControlButton(
+                        icon: isLastBlock ? Icons.check : Icons.fast_forward,
+                        onPressed: _isPaused
+                            ? null
+                            : (isLastBlock ? _onSessionComplete : _nextBlock),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  if (!isLastBlock) ...[
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('UP NEXT', style: AppTextStyles.caption),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardSurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${_currentIndex + 2}',
+                            style: AppTextStyles.h2.copyWith(
+                              color: AppColors.goldAccent,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              kRoutineBlocks[_currentIndex + 1].name,
+                              style: AppTextStyles.body.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+            // PAUSED overlay
+            if (_isPaused)
+              Positioned.fill(
+                child: Container(
+                  color: const Color(0xDD0A0A0F),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'PAUSED',
+                          style: TextStyle(
+                            color: Color(0xFFD4AF37),
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 8,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _timeText,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Material(
+                          color: const Color(0xFFD4AF37),
+                          borderRadius: BorderRadius.circular(50),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(50),
+                            onTap: _togglePauseResume,
+                            child: Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow,
+                                color: Color(0xFF0A0A0F),
+                                size: 36,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'TAP TO RESUME',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-              const SizedBox(height: 24),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
