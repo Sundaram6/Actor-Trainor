@@ -10,10 +10,11 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/onboarding_screen.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/services/tts_service.dart';
+import 'package:the_instrument/widgets/breathing_guide.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -54,13 +55,13 @@ void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'soundEnabled': true,
+      'soundEnabled': false,
       'haptics_enabled': true,
       'voice_instructions_enabled': true,
       'notificationEnabled': false,
       'notificationHour': 7,
       'notificationMinute': 0,
-      'has_completed_onboarding': false,
+      'session_active': false,
     });
     await loadRealFonts();
     SoundService.enabled = false;
@@ -75,7 +76,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 39: Onboarding Page 2 - The 9 Blocks', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 40: Breathing Visual Guide on Block 1', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -98,24 +99,30 @@ void main() {
             key: boundaryKey,
             child: child ?? const SizedBox(),
           ),
-          home: const OnboardingScreen(initialPage: 1),
+          home: const SessionScreen(startBlockIndex: 0),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Onboarding Page 2 elements
-    expect(find.text('The 9 Blocks'), findsOneWidget);
-    expect(find.text('NEXT'), findsOneWidget);
-    expect(find.text('SKIP'), findsOneWidget);
-
-    // Verify block names in the grid
-    for (final block in kRoutineBlocks) {
-      expect(find.text(block.name), findsOneWidget);
+    // Dismiss intention dialog with SKIP
+    if (find.text('SKIP').evaluate().isNotEmpty) {
+      await tester.tap(find.text('SKIP'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
-    // Capture screenshot of Onboarding Page 2 showing The 9 Blocks grid
-    await captureBoundary(tester, boundaryKey, 'onboarding_page2_blocks.png');
+    // Verify BreathingGuide is rendered instead of static text timer
+    expect(find.byType(BreathingGuide), findsOneWidget);
+    expect(find.text('Let the circle guide your breath'), findsOneWidget);
+
+    // Advance 3 seconds (mid-inhale: expanded circle, INHALE label)
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('INHALE'), findsOneWidget);
+
+    // Capture screenshot of Session screen with expanded breathing circle and INHALE text
+    await captureBoundary(tester, boundaryKey, 'session_breathing_guide_inhale.png');
   });
 }

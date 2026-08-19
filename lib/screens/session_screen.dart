@@ -9,6 +9,7 @@ import '../providers/database_provider.dart';
 import '../database/database.dart';
 import '../services/sound_service.dart';
 import '../services/tts_service.dart';
+import '../widgets/breathing_guide.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import 'session_completion_screen.dart';
@@ -929,13 +930,20 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       ),
                     ],
                     const SizedBox(height: 24),
-                    Text(
-                      _timeText,
-                      style: AppTextStyles.h1.copyWith(
-                        fontSize: 64,
-                        color: AppColors.textPrimary,
+                    if (_currentIndex == 0 && kRoutineBlocks[0].subSteps != null)
+                      BreathingGuide(
+                        key: ValueKey('breath_${_currentIndex}_$_subStepIndex'),
+                        durationSeconds: _secondsRemaining,
+                        isPaused: _isPaused,
+                      )
+                    else
+                      Text(
+                        _timeText,
+                        style: AppTextStyles.h1.copyWith(
+                          fontSize: 64,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 24),
                     // 3-button control row
                     Row(
