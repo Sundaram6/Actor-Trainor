@@ -8,6 +8,7 @@ import '../core/constants.dart';
 import '../providers/database_provider.dart';
 import '../database/database.dart';
 import '../services/sound_service.dart';
+import '../services/tts_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import 'session_completion_screen.dart';
@@ -52,6 +53,14 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     _blockStartedAt = clock.now();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkResumeState());
+  }
+
+  void _speakCurrentInstruction() {
+    final block = kRoutineBlocks[_currentIndex];
+    final instruction = block.subSteps != null
+        ? block.subSteps![_subStepIndex].instruction
+        : block.description;
+    ref.read(ttsServiceProvider).speak(instruction);
   }
 
   @override
@@ -164,6 +173,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   }
 
   Future<void> _showAbandonDialog() async {
+    ref.read(ttsServiceProvider).stop();
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticMedium(enabled: hapticsOn);
 
@@ -239,6 +249,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                 ),
                 onPressed: () async {
                   _timer?.cancel();
+                  ref.read(ttsServiceProvider).stop();
                   await SessionStateService().saveState(
                     blockIndex: _currentIndex,
                     stepIndex: _subStepIndex,
@@ -297,6 +308,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                 ),
                 onPressed: () async {
                   _timer?.cancel();
+                  ref.read(ttsServiceProvider).stop();
                   await SessionStateService().clearState();
                   if (dialogContext.mounted) {
                     Navigator.pop(dialogContext);
@@ -322,6 +334,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   }
 
   Future<void> _showSkipBlockDialog() async {
+    ref.read(ttsServiceProvider).stop();
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticLight(enabled: hapticsOn);
 
@@ -436,6 +449,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     _blockStartedAt ??= clock.now().subtract(
       Duration(seconds: _blockDurationSeconds - _secondsRemaining),
     );
+    _speakCurrentInstruction();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_blockStartedAt == null) return;
       final elapsed = clock.now().difference(_blockStartedAt!).inSeconds;
@@ -502,6 +516,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       );
     } else if (_isRunning) {
       // Pause
+      ref.read(ttsServiceProvider).stop();
       hapticLight(enabled: hapticsOn);
       _pausedAt = clock.now();
       _timer?.cancel();
@@ -529,6 +544,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   }
 
   void _nextSubStep() {
+    ref.read(ttsServiceProvider).stop();
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticLight(enabled: hapticsOn);
     ref.read(soundServiceProvider).playTransitionTone();
@@ -539,6 +555,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       _secondsRemaining = _blockDurationSeconds;
       _blockStartedAt = clock.now();
     });
+    _speakCurrentInstruction();
     SessionStateService().saveState(
       blockIndex: _currentIndex,
       stepIndex: _subStepIndex,
@@ -552,6 +569,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
 
   void _nextBlock() {
     if (_isPaused) return;
+    ref.read(ttsServiceProvider).stop();
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticMedium(enabled: hapticsOn);
     ref.read(soundServiceProvider).playTransitionTone();
@@ -582,6 +600,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   }
 
   Future<void> _onSessionComplete() async {
+    ref.read(ttsServiceProvider).stop();
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticSuccess(enabled: hapticsOn);
     ref.read(soundServiceProvider).playCompletionTone();
@@ -636,6 +655,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
 
   @override
   void dispose() {
+    ref.read(ttsServiceProvider).stop();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(WakelockPlus.disable().catchError((_) {}));
     _timer?.cancel();

@@ -1,8 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:clock/clock.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -13,9 +10,10 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/progress_screen.dart';
+import 'package:the_instrument/screens/settings_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
+import 'package:the_instrument/services/tts_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -56,8 +54,9 @@ void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'soundEnabled': false,
+      'soundEnabled': true,
       'haptics_enabled': true,
+      'voice_instructions_enabled': true,
       'notificationEnabled': false,
       'notificationHour': 7,
       'notificationMinute': 0,
@@ -76,51 +75,11 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 34: Block-Level Progress Tracking Bars', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 35: Settings Voice Instructions Toggle', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
-    final now = DateTime(2026, 8, 19, 9, 30);
-    final sampleOutcomes1 = [
-      'completed',
-      'skipped',
-      'completed',
-      'completed',
-      'completed',
-      'completed',
-      'completed',
-      'skipped',
-      'completed',
-    ];
-
-    final sampleOutcomes2 = [
-      'completed',
-      'skipped',
-      'completed',
-      'pending',
-      'pending',
-      'pending',
-      'pending',
-      'pending',
-      'pending',
-    ];
-
-    // Seed session records with blocksJson
-    await testDb.insertSessionRecord(SessionRecordsCompanion(
-      completedAt: drift.Value(now.subtract(const Duration(days: 1))),
-      blocksCompleted: const drift.Value(2),
-      totalMinutes: const drift.Value(25),
-      blocksJson: drift.Value(jsonEncode(sampleOutcomes2)),
-    ));
-
-    await testDb.insertSessionRecord(SessionRecordsCompanion(
-      completedAt: drift.Value(now),
-      blocksCompleted: const drift.Value(7),
-      totalMinutes: const drift.Value(85),
-      blocksJson: drift.Value(jsonEncode(sampleOutcomes1)),
-    ));
 
     final GlobalKey boundaryKey = GlobalKey();
 
@@ -129,6 +88,7 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(testDb),
           soundServiceProvider.overrideWithValue(NoopSoundService()),
+          ttsServiceProvider.overrideWithValue(NoopTtsService()),
         ],
         child: MaterialApp(
           title: appTitle,
@@ -138,20 +98,28 @@ void main() {
             key: boundaryKey,
             child: child ?? const SizedBox(),
           ),
-          home: const ProgressScreen(),
+          home: const SettingsScreen(),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Progress screen renders cards with 9-block bars
-    expect(find.text('PROGRESS'), findsOneWidget);
-    expect(find.text('9 blocks • 7 completed • 2 skipped'), findsOneWidget);
-    expect(find.text('9 blocks • 2 completed • 1 skipped'), findsOneWidget);
+    // Verify Settings screen renders Voice Instructions toggle
+    expect(find.text('SETTINGS'), findsOneWidget);
+    expect(find.text('Voice Instructions'), findsOneWidget);
+    expect(find.text('Reads step instructions aloud'), findsOneWidget);
 
-    // Capture screenshot of Progress screen showing block-level completion bars
-    await captureBoundary(tester, boundaryKey, 'progress_block_level_bars.png');
+    // Verify switch is ON
+    final voiceFinder = find.widgetWithText(ListTile, 'Voice Instructions');
+    expect(voiceFinder, findsOneWidget);
+    final switchFinder = find.descendant(of: voiceFinder, matching: find.byType(Switch));
+    expect(switchFinder, findsOneWidget);
+    final Switch switchWidget = tester.widget(switchFinder);
+    expect(switchWidget.value, isTrue);
+
+    // Capture screenshot of Settings screen with Voice Instructions toggle ON
+    await captureBoundary(tester, boundaryKey, 'settings_voice_instructions_on.png');
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
