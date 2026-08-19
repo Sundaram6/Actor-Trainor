@@ -234,6 +234,115 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     );
   }
 
+  Future<void> _showSkipBlockDialog() async {
+    final hapticsOn = ref.read(hapticsEnabledProvider);
+    hapticLight(enabled: hapticsOn);
+
+    final currentBlock = kRoutineBlocks[_currentIndex];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => RepaintBoundary(
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141419),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2A2A2A)),
+          ),
+          title: const Text(
+            'Skip Block?',
+            style: TextStyle(
+              color: Color(0xFFD4AF37),
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text.rich(
+                TextSpan(
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  children: [
+                    const TextSpan(text: 'You are about to skip '),
+                    TextSpan(
+                      text: currentBlock.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const TextSpan(text: '. This block will be marked as skipped.'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  // CANCEL button (gold outline)
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFD4AF37),
+                        side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // SKIP button (gold fill background with dark text)
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: const Color(0xFF0A0A0F),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        _nextBlock();
+                      },
+                      child: const Text(
+                        'SKIP',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_secondsRemaining > 0) {
@@ -532,7 +641,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                           icon: isLastBlock ? Icons.check : Icons.fast_forward,
                           onPressed: _isPaused
                               ? null
-                              : (isLastBlock ? _onSessionComplete : _nextBlock),
+                              : (isLastBlock ? _onSessionComplete : _showSkipBlockDialog),
                         ),
                       ],
                     ),

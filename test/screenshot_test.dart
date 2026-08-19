@@ -73,7 +73,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 31: Session Abandonment Dialog', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 32: Block Skip Confirmation Dialog', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -81,7 +81,7 @@ void main() {
 
     final GlobalKey boundaryKey = GlobalKey();
 
-    // Start on Block 1 (Breath Lab with 4 sub-steps)
+    // Start on Block 2 (index 1: Physical Warm-up)
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -96,43 +96,51 @@ void main() {
             key: boundaryKey,
             child: child ?? const SizedBox(),
           ),
-          home: const SessionScreen(startBlockIndex: 0),
+          home: const SessionScreen(startBlockIndex: 1),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify session starts on Block 1
-    expect(find.text('BLOCK 1 OF ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('STEP 1 OF 4'), findsOneWidget);
+    // Verify session starts on Block 2: Physical Warm-up
+    expect(find.text('BLOCK 2 OF ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('Physical Warm-up'), findsOneWidget);
 
-    // Advance to Step 2
-    final nextStepBtn = find.byIcon(Icons.skip_next);
-    expect(nextStepBtn, findsOneWidget);
-    await tester.tap(nextStepBtn);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    // Verify we are on Step 2
-    expect(find.text('STEP 2 OF 4'), findsOneWidget);
-
-    // Tap Close (X) button in AppBar to trigger abandonment dialog
-    final closeBtn = find.byIcon(Icons.close);
-    expect(closeBtn, findsOneWidget);
-    await tester.tap(closeBtn);
+    // Tap Skip Block button (fast_forward icon)
+    final skipBlockBtn = find.byIcon(Icons.fast_forward);
+    expect(skipBlockBtn, findsOneWidget);
+    await tester.tap(skipBlockBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verify abandonment dialog appears with correct context
-    expect(find.text('Leave Session?'), findsOneWidget);
-    expect(find.text('You are on Block 1 — Step 2'), findsOneWidget);
-    expect(find.text('RESUME'), findsOneWidget);
-    expect(find.text('SAVE & EXIT'), findsOneWidget);
-    expect(find.text('DISCARD'), findsOneWidget);
+    // Verify Skip Block confirmation dialog appears
+    expect(find.text('Skip Block?'), findsOneWidget);
+    expect(find.textContaining('You are about to skip Physical Warm-up'), findsOneWidget);
+    expect(find.text('CANCEL'), findsOneWidget);
+    expect(find.text('SKIP'), findsOneWidget);
 
-    // Capture screenshot of the whole screen with abandonment dialog
-    await captureBoundary(tester, boundaryKey, 'session_abandonment_dialog.png');
+    // Capture screenshot of the skip confirmation dialog
+    await captureBoundary(tester, boundaryKey, 'session_skip_block_dialog.png');
+
+    // Test Cancel button dismisses dialog without advancing
+    await tester.tap(find.text('CANCEL'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Skip Block?'), findsNothing);
+    expect(find.text('BLOCK 2 OF ${kRoutineBlocks.length}'), findsOneWidget);
+
+    // Tap Skip Block button again and confirm with SKIP
+    await tester.tap(skipBlockBtn);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('SKIP'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify next block (Block 3: Memory Foundation) loads
+    expect(find.text('BLOCK 3 OF ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('Memory Foundation'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
