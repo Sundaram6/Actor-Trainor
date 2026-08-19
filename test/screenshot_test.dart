@@ -10,7 +10,6 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/services/tts_service.dart';
@@ -48,29 +47,61 @@ Future<void> captureBoundary(WidgetTester tester, GlobalKey key, String fileName
   });
 }
 
-class AndroidHomeScreenWidgetPreview extends StatelessWidget {
-  final String status;
-  final int streak;
-  final bool showStartButton;
+class TheInstrumentAdaptiveIcon extends StatelessWidget {
+  final double size;
+  final double borderRadius;
 
-  const AndroidHomeScreenWidgetPreview({
+  const TheInstrumentAdaptiveIcon({
     super.key,
-    required this.status,
-    required this.streak,
-    this.showStartButton = false,
+    this.size = 56.0,
+    this.borderRadius = 14.0,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0A0A),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: const Color(0xFF222222), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: size * 0.16,
+          height: size * 0.52,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD4AF37),
+            borderRadius: BorderRadius.circular(size * 0.03),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class HomeScreenAppDrawerPreview extends StatelessWidget {
+  const HomeScreenAppDrawerPreview({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F111A), // Home screen wallpaper
+      backgroundColor: const Color(0xFF0D0F18),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top launcher header
+              // Top status bar
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -91,119 +122,61 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 36),
-              const Text(
-                'Home',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 1.2,
+              const SizedBox(height: 28),
+              // Search apps bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E212D),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFF2E3344)),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.search, color: Colors.white54, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Search apps...',
+                      style: TextStyle(color: Colors.white38, fontSize: 14),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // 2x2 Widget Card matching updated widget_layout.xml with ▶ START
+              const SizedBox(height: 36),
+              // App Grid 4x3 with childAspectRatio
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 4,
+                  childAspectRatio: 0.72,
+                  mainAxisSpacing: 20,
+                  crossAxisSpacing: 16,
+                  children: [
+                    _AppGridItem(
+                      customIcon: const TheInstrumentAdaptiveIcon(size: 56),
+                      label: 'Instrument',
+                      isHighlighted: true,
+                    ),
+                    _AppGridItem(icon: Icons.camera_alt, label: 'Camera', color: Colors.purple),
+                    _AppGridItem(icon: Icons.photo, label: 'Photos', color: Colors.redAccent),
+                    _AppGridItem(icon: Icons.calendar_month, label: 'Calendar', color: Colors.blue),
+                    _AppGridItem(icon: Icons.map, label: 'Maps', color: Colors.green),
+                    _AppGridItem(icon: Icons.settings, label: 'Settings', color: Colors.grey),
+                    _AppGridItem(icon: Icons.chat, label: 'Messages', color: Colors.lightBlue),
+                    _AppGridItem(icon: Icons.mail, label: 'Email', color: Colors.amber),
+                  ],
+                ),
+              ),
+              // Bottom dock
               Center(
                 child: Container(
-                  width: 220,
-                  height: showStartButton ? 160 : 130,
+                  width: 48,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF2A2A2A), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: status == 'COMPLETED'
-                                  ? const Color(0xFFD4AF37)
-                                  : (status == 'IN PROGRESS'
-                                      ? const Color(0xFFE5A93C)
-                                      : const Color(0xFF888888)),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            status,
-                            style: const TextStyle(
-                              color: Color(0xFFD4AF37),
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Streak: $streak',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'The Instrument',
-                        style: TextStyle(
-                          color: Colors.white30,
-                          fontSize: 11,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      if (showStartButton) ...[
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFD4AF37), width: 1),
-                          ),
-                          child: const Text(
-                            '▶ START',
-                            style: TextStyle(
-                              color: Color(0xFFD4AF37),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                    color: Colors.white38,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const Spacer(),
-              // Launcher bottom dock apps
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _LauncherAppIcon(icon: Icons.phone, label: 'Phone', color: Colors.green),
-                  _LauncherAppIcon(icon: Icons.message, label: 'Messages', color: Colors.blue),
-                  _LauncherAppIcon(icon: Icons.timer, label: 'Instrument', color: const Color(0xFFD4AF37)),
-                  _LauncherAppIcon(icon: Icons.camera_alt, label: 'Camera', color: Colors.purple),
-                ],
-              ),
-              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -212,15 +185,19 @@ class AndroidHomeScreenWidgetPreview extends StatelessWidget {
   }
 }
 
-class _LauncherAppIcon extends StatelessWidget {
-  final IconData icon;
+class _AppGridItem extends StatelessWidget {
+  final IconData? icon;
+  final Widget? customIcon;
   final String label;
-  final Color color;
+  final Color? color;
+  final bool isHighlighted;
 
-  const _LauncherAppIcon({
-    required this.icon,
+  const _AppGridItem({
+    this.icon,
+    this.customIcon,
     required this.label,
-    required this.color,
+    this.color,
+    this.isHighlighted = false,
   });
 
   @override
@@ -228,22 +205,262 @@ class _LauncherAppIcon extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E212B),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2E3342)),
-          ),
-          child: Icon(icon, color: color, size: 26),
-        ),
-        const SizedBox(height: 6),
+        customIcon ??
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E212D),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF2E3344)),
+              ),
+              child: Icon(icon, color: color ?? Colors.white, size: 28),
+            ),
+        const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
+          style: TextStyle(
+            color: isHighlighted ? const Color(0xFFD4AF37) : Colors.white70,
+            fontSize: 11,
+            fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+}
+
+class AppSwitcherPreview extends StatelessWidget {
+  const AppSwitcherPreview({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF08090E),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+          child: Column(
+            children: [
+              // Top bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '9:41',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Row(
+                    children: const [
+                      Icon(Icons.wifi, color: Colors.white, size: 16),
+                      SizedBox(width: 6),
+                      Icon(Icons.battery_full, color: Colors.white, size: 16),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              // App Switcher Card with Title Bar containing Adaptive Icon
+              Expanded(
+                child: Center(
+                  child: Container(
+                    width: 310,
+                    height: 540,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141419),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFF2A2A35), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        // Task card title bar
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          color: const Color(0xFF1B1B22),
+                          child: Row(
+                            children: [
+                              const TheInstrumentAdaptiveIcon(
+                                size: 24,
+                                borderRadius: 6,
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'The Instrument',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(Icons.more_vert, color: Colors.white54, size: 18),
+                            ],
+                          ),
+                        ),
+                        // Task Card Mini Screen Content
+                        Expanded(
+                          child: Container(
+                            color: const Color(0xFF0A0A0F),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'THE INSTRUMENT',
+                                  style: TextStyle(
+                                    color: Color(0xFFD4AF37),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    _MiniStat(label: 'Today', val: 'Not started'),
+                                    const SizedBox(width: 6),
+                                    _MiniStat(label: 'Streak', val: '7'),
+                                    const SizedBox(width: 6),
+                                    _MiniStat(label: 'This Week', val: '5'),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF141419),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            '1',
+                                            style: TextStyle(
+                                              color: Color(0xFFD4AF37),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: const [
+                                          Text(
+                                            'Week 1 • Day 1',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            '98 MINUTE ROUTINE',
+                                            style: TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      'START ROUTINE',
+                                      style: TextStyle(
+                                        color: Color(0xFF0A0A0F),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Clear all button
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E212D),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Text(
+                  'Clear all',
+                  style: TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String val;
+
+  const _MiniStat({required this.label, required this.val});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
+            const SizedBox(height: 2),
+            Text(val, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -275,81 +492,54 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 44: Widget Quick Action ▶ START and SessionScreen launch', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 45: Adaptive Launcher Icon & App Switcher', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final GlobalKey widgetKey = GlobalKey();
+    final GlobalKey drawerKey = GlobalKey();
 
-    // 1. Home screen widget with ▶ START action button
+    // 1. Home screen / app drawer with adaptive launcher icon
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(testDb),
-          soundServiceProvider.overrideWithValue(NoopSoundService()),
-          ttsServiceProvider.overrideWithValue(NoopTtsService()),
-        ],
-        child: MaterialApp(
-          title: appTitle,
-          debugShowCheckedModeBanner: false,
-          theme: appTheme,
-          builder: (context, child) => RepaintBoundary(
-            key: widgetKey,
-            child: child ?? const SizedBox(),
-          ),
-          home: const AndroidHomeScreenWidgetPreview(
-            status: 'NOT STARTED',
-            streak: 6,
-            showStartButton: true,
-          ),
+      MaterialApp(
+        title: appTitle,
+        debugShowCheckedModeBanner: false,
+        theme: appTheme,
+        builder: (context, child) => RepaintBoundary(
+          key: drawerKey,
+          child: child ?? const SizedBox(),
         ),
+        home: const HomeScreenAppDrawerPreview(),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('NOT STARTED'), findsOneWidget);
-    expect(find.text('Streak: 6'), findsOneWidget);
-    expect(find.text('▶ START'), findsOneWidget);
+    expect(find.text('Instrument'), findsOneWidget);
 
-    await captureBoundary(tester, widgetKey, 'home_screen_widget_start_action.png');
+    await captureBoundary(tester, drawerKey, 'launcher_icon_home_screen.png');
 
-    // 2. Direct SessionScreen launch from widget quick action
-    final GlobalKey sessionKey = GlobalKey();
+    // 2. App switcher / Recent apps view with adaptive icon in title bar
+    final GlobalKey switcherKey = GlobalKey();
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          databaseProvider.overrideWithValue(testDb),
-          soundServiceProvider.overrideWithValue(NoopSoundService()),
-          ttsServiceProvider.overrideWithValue(NoopTtsService()),
-        ],
-        child: MaterialApp(
-          title: appTitle,
-          debugShowCheckedModeBanner: false,
-          theme: appTheme,
-          builder: (context, child) => RepaintBoundary(
-            key: sessionKey,
-            child: child ?? const SizedBox(),
-          ),
-          home: const SessionScreen(startBlockIndex: 0),
+      MaterialApp(
+        title: appTitle,
+        debugShowCheckedModeBanner: false,
+        theme: appTheme,
+        builder: (context, child) => RepaintBoundary(
+          key: switcherKey,
+          child: child ?? const SizedBox(),
         ),
+        home: const AppSwitcherPreview(),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Dismiss intention dialog with SKIP if prompted
-    if (find.text('SKIP').evaluate().isNotEmpty) {
-      await tester.tap(find.text('SKIP'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    }
+    expect(find.text('The Instrument'), findsOneWidget);
 
-    expect(find.text('SESSION'), findsOneWidget);
-
-    await captureBoundary(tester, sessionKey, 'session_screen_launched_from_widget.png');
+    await captureBoundary(tester, switcherKey, 'launcher_icon_app_switcher.png');
   });
 }
