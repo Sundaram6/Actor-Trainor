@@ -12,15 +12,30 @@ class ExportService {
 
   ExportService(this._db);
 
+  static Future<String> generateJson(AppDatabase db) async {
+    final records = await db.allSessionRecords;
+    final data = records.map((r) => {
+      'date': r.completedAt.toIso8601String(),
+      'blocksCompleted': r.blocksCompleted,
+      'durationMinutes': r.totalMinutes,
+      'intention': r.intention,
+      'notes': r.notes,
+    }).toList();
+
+    return const JsonEncoder.withIndent('  ').convert({
+      'app': 'The Instrument',
+      'exportedAt': DateTime.now().toIso8601String(),
+      'sessionCount': data.length,
+      'sessions': data,
+    });
+  }
+
   Future<String?> exportAllData({Directory? targetDirectory}) async {
     try {
-      // Request storage permission on Android if applicable
       if (Platform.isAndroid) {
         try {
           final status = await Permission.storage.request();
-          if (!status.isGranted && !status.isLimited) {
-            // Check manageExternalStorage or continue if app-specific directory is accessible
-          }
+          if (!status.isGranted && !status.isLimited) {}
         } catch (_) {}
       }
 

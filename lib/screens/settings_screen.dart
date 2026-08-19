@@ -7,6 +7,7 @@ import '../providers/today_provider.dart';
 import '../services/export_service.dart';
 import '../services/notification_service.dart';
 import '../services/sound_service.dart';
+import 'package:share_plus/share_plus.dart';
 import 'onboarding_screen.dart';
 import 'progress_screen.dart';
 
@@ -277,6 +278,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             label: 'Reset All Progress',
             subtitle: 'Clear every session record. Cannot undo.',
             onTap: () => _showResetDialog(context),
+          ),
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.download_outlined,
+            label: 'Export Session History',
+            subtitle: 'Share formatted session JSON with coach or backup',
+            onTap: () async {
+              final db = ref.read(databaseProvider);
+              final json = await ExportService.generateJson(db);
+              Share.share(
+                json,
+                subject: 'The Instrument — Session History Export',
+              );
+            },
           ),
         ],
       ),

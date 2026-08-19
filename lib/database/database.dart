@@ -87,6 +87,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // SessionRecord queries
+  Future<List<SessionRecord>> get allSessionRecords => select(sessionRecords).get();
   Future<List<SessionRecord>> getAllSessionRecords() => select(sessionRecords).get();
   Future<int> insertSessionRecord(SessionRecordsCompanion record) => into(sessionRecords).insert(record);
   Future<int> updateSessionRecordNotes(int id, String notes) {
