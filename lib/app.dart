@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'core/constants.dart';
 import 'core/theme.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/routine_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/today_screen.dart';
 
 class TheInstrumentApp extends StatelessWidget {
-  const TheInstrumentApp({super.key});
+  final bool showOnboarding;
+  const TheInstrumentApp({super.key, this.showOnboarding = false});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +17,7 @@ class TheInstrumentApp extends StatelessWidget {
       title: appTitle,
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      home: const MainShellScreen(),
+      home: showOnboarding ? const OnboardingScreen() : const MainShellScreen(),
     );
   }
 }

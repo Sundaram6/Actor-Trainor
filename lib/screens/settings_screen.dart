@@ -7,6 +7,7 @@ import '../providers/today_provider.dart';
 import '../services/export_service.dart';
 import '../services/notification_service.dart';
 import '../services/sound_service.dart';
+import 'onboarding_screen.dart';
 import 'progress_screen.dart';
 
 final soundEnabledProvider = StateProvider<bool>((ref) => true);
@@ -219,6 +220,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           const SizedBox(height: 24),
           const _SectionTitle('Data'),
+          _SettingsTile(
+            icon: Icons.replay,
+            label: 'Replay Onboarding',
+            subtitle: 'View the intro screens again',
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('has_completed_onboarding', false);
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 12),
           _SettingsTile(
             icon: Icons.download,
             label: 'Export All Data',
