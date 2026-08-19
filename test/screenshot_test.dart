@@ -53,7 +53,7 @@ void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'soundEnabled': true,
+      'soundEnabled': false,
       'haptics_enabled': true,
       'notificationEnabled': false,
       'notificationHour': 7,
@@ -61,7 +61,7 @@ void main() {
       'session_active': false,
     });
     await loadRealFonts();
-    SoundService.enabled = true;
+    SoundService.enabled = false;
     NotificationService.enabled = false;
   });
 
@@ -73,7 +73,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 30: Session Paused Overlay', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 31: Session Abandonment Dialog', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -81,49 +81,58 @@ void main() {
 
     final GlobalKey boundaryKey = GlobalKey();
 
+    // Start on Block 1 (Breath Lab with 4 sub-steps)
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(testDb),
+          soundServiceProvider.overrideWithValue(NoopSoundService()),
         ],
         child: MaterialApp(
           title: appTitle,
           debugShowCheckedModeBanner: false,
           theme: appTheme,
-          home: RepaintBoundary(
+          builder: (context, child) => RepaintBoundary(
             key: boundaryKey,
-            child: const SessionScreen(),
+            child: child ?? const SizedBox(),
           ),
+          home: const SessionScreen(startBlockIndex: 0),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify session screen renders with 3 control buttons
-    expect(find.text('SESSION'), findsOneWidget);
+    // Verify session starts on Block 1
     expect(find.text('BLOCK 1 OF ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('STEP 1 OF 4'), findsOneWidget);
 
-    // Tap play to start the timer
-    final playButtons = find.byIcon(Icons.play_arrow);
-    expect(playButtons, findsWidgets);
-    await tester.tap(playButtons.first);
+    // Advance to Step 2
+    final nextStepBtn = find.byIcon(Icons.skip_next);
+    expect(nextStepBtn, findsOneWidget);
+    await tester.tap(nextStepBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Now tap pause
-    final pauseButton = find.byIcon(Icons.pause);
-    expect(pauseButton, findsOneWidget);
-    await tester.tap(pauseButton);
+    // Verify we are on Step 2
+    expect(find.text('STEP 2 OF 4'), findsOneWidget);
+
+    // Tap Close (X) button in AppBar to trigger abandonment dialog
+    final closeBtn = find.byIcon(Icons.close);
+    expect(closeBtn, findsOneWidget);
+    await tester.tap(closeBtn);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    // Verify PAUSED overlay is showing
-    expect(find.text('PAUSED'), findsOneWidget);
-    expect(find.text('TAP TO RESUME'), findsOneWidget);
+    // Verify abandonment dialog appears with correct context
+    expect(find.text('Leave Session?'), findsOneWidget);
+    expect(find.text('You are on Block 1 — Step 2'), findsOneWidget);
+    expect(find.text('RESUME'), findsOneWidget);
+    expect(find.text('SAVE & EXIT'), findsOneWidget);
+    expect(find.text('DISCARD'), findsOneWidget);
 
-    // Capture screenshot of paused overlay
-    await captureBoundary(tester, boundaryKey, 'session_paused_overlay.png');
+    // Capture screenshot of the whole screen with abandonment dialog
+    await captureBoundary(tester, boundaryKey, 'session_abandonment_dialog.png');
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));

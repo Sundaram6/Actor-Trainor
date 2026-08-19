@@ -45,6 +45,14 @@ class SoundService {
   }
 }
 
+class NoopSoundService extends SoundService {
+  @override
+  Future<void> playTransitionTone() async {}
+
+  @override
+  Future<void> playCompletionTone() async {}
+}
+
 final soundServiceProvider = Provider<SoundService>((ref) {
   final service = SoundService();
   final enabled = ref.watch(soundEnabledProvider);

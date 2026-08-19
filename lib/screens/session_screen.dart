@@ -99,6 +99,141 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     }
   }
 
+  Future<void> _showAbandonDialog() async {
+    final hapticsOn = ref.read(hapticsEnabledProvider);
+    hapticMedium(enabled: hapticsOn);
+
+    final block = kRoutineBlocks[_currentIndex];
+    final hasSubSteps = block.subSteps != null;
+    final subtitleText = hasSubSteps
+        ? 'You are on Block ${_currentIndex + 1} — Step ${_subStepIndex + 1}'
+        : 'You are on Block ${_currentIndex + 1}';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => RepaintBoundary(
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141419),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF2A2A2A)),
+          ),
+          title: const Text(
+            'Leave Session?',
+            style: TextStyle(
+              color: Color(0xFFD4AF37),
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                subtitleText,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // RESUME button
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD4AF37),
+                  side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text(
+                  'RESUME',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // SAVE & EXIT button
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD4AF37),
+                  side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () async {
+                  _timer?.cancel();
+                  await SessionStateService().saveState(
+                    blockIndex: _currentIndex,
+                    stepIndex: _subStepIndex,
+                    remainingSeconds: _secondsRemaining,
+                    isPaused: true,
+                  );
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext);
+                  }
+                  if (mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                },
+                child: const Text(
+                  'SAVE & EXIT',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // DISCARD button
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD4AF37),
+                  side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () async {
+                  _timer?.cancel();
+                  await SessionStateService().clearState();
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext);
+                  }
+                  if (mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                },
+                child: const Text(
+                  'DISCARD',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_secondsRemaining > 0) {
@@ -266,239 +401,246 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final hasSubSteps = current.subSteps != null;
     final isLastSubStep = hasSubSteps ? _subStepIndex >= current.subSteps!.length - 1 : true;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'SESSION',
-          style: AppTextStyles.h1.copyWith(color: AppColors.goldAccent),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showAbandonDialog();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'SESSION',
+            style: AppTextStyles.h1.copyWith(color: AppColors.goldAccent),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: AppColors.textSecondary),
+            onPressed: _showAbandonDialog,
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textSecondary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Main session content
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: AppColors.cardSurface,
-                      color: AppColors.goldAccent,
-                      minHeight: 6,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
-                    style: AppTextStyles.caption,
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: AppColors.goldAccent.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${_currentIndex + 1}',
-                        style: AppTextStyles.h1.copyWith(
-                          color: AppColors.goldAccent,
-                          fontSize: 36,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    hasSubSteps
-                        ? current.subSteps![_subStepIndex].title
-                        : current.name,
-                    style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    hasSubSteps
-                        ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
-                        : '${current.durationMinutes} MINUTES',
-                    style: AppTextStyles.caption,
-                  ),
-                  if (hasSubSteps) ...[
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // Main session content
+              SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.cardBorder),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: AppColors.cardSurface,
+                        color: AppColors.goldAccent,
+                        minHeight: 6,
                       ),
-                      child: Text(
-                        current.subSteps![_subStepIndex].instruction,
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  Text(
-                    _timeText,
-                    style: AppTextStyles.h1.copyWith(
-                      fontSize: 64,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // 3-button control row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Pause / Resume button
-                      _ControlButton(
-                        icon: _isPaused
-                            ? Icons.play_arrow
-                            : (_isRunning ? Icons.pause : Icons.play_arrow),
-                        onPressed: _togglePauseResume,
-                      ),
-                      const SizedBox(width: 24),
-                      // Next sub-step button
-                      _ControlButton(
-                        icon: Icons.skip_next,
-                        onPressed: _isPaused
-                            ? null
-                            : (hasSubSteps && !isLastSubStep
-                                ? _nextSubStep
-                                : null),
-                      ),
-                      const SizedBox(width: 24),
-                      // Skip block / Complete button
-                      _ControlButton(
-                        icon: isLastBlock ? Icons.check : Icons.fast_forward,
-                        onPressed: _isPaused
-                            ? null
-                            : (isLastBlock ? _onSessionComplete : _nextBlock),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (!isLastBlock) ...[
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('UP NEXT', style: AppTextStyles.caption),
                     ),
                     const SizedBox(height: 8),
+                    Text(
+                      'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
+                      style: AppTextStyles.caption,
+                    ),
+                    const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.cardBorder),
+                        color: AppColors.goldAccent.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
+                      child: Center(
+                        child: Text(
+                          '${_currentIndex + 1}',
+                          style: AppTextStyles.h1.copyWith(
+                            color: AppColors.goldAccent,
+                            fontSize: 36,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      hasSubSteps
+                          ? current.subSteps![_subStepIndex].title
+                          : current.name,
+                      style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      hasSubSteps
+                          ? 'STEP ${_subStepIndex + 1} OF ${current.subSteps!.length}'
+                          : '${current.durationMinutes} MINUTES',
+                      style: AppTextStyles.caption,
+                    ),
+                    if (hasSubSteps) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: Text(
+                          current.subSteps![_subStepIndex].instruction,
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    Text(
+                      _timeText,
+                      style: AppTextStyles.h1.copyWith(
+                        fontSize: 64,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // 3-button control row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Pause / Resume button
+                        _ControlButton(
+                          icon: _isPaused
+                              ? Icons.play_arrow
+                              : (_isRunning ? Icons.pause : Icons.play_arrow),
+                          onPressed: _togglePauseResume,
+                        ),
+                        const SizedBox(width: 24),
+                        // Next sub-step button
+                        _ControlButton(
+                          icon: Icons.skip_next,
+                          onPressed: _isPaused
+                              ? null
+                              : (hasSubSteps && !isLastSubStep
+                                  ? _nextSubStep
+                                  : null),
+                        ),
+                        const SizedBox(width: 24),
+                        // Skip block / Complete button
+                        _ControlButton(
+                          icon: isLastBlock ? Icons.check : Icons.fast_forward,
+                          onPressed: _isPaused
+                              ? null
+                              : (isLastBlock ? _onSessionComplete : _nextBlock),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    if (!isLastBlock) ...[
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('UP NEXT', style: AppTextStyles.caption),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              '${_currentIndex + 2}',
+                              style: AppTextStyles.h2.copyWith(
+                                color: AppColors.goldAccent,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                kRoutineBlocks[_currentIndex + 1].name,
+                                style: AppTextStyles.body.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+              // PAUSED overlay
+              if (_isPaused)
+                Positioned.fill(
+                  child: Container(
+                    color: const Color(0xDD0A0A0F),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '${_currentIndex + 2}',
-                            style: AppTextStyles.h2.copyWith(
-                              color: AppColors.goldAccent,
-                              fontSize: 18,
+                          const Text(
+                            'PAUSED',
+                            style: TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 48,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 8,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              kRoutineBlocks[_currentIndex + 1].name,
-                              style: AppTextStyles.body.copyWith(
-                                color: AppColors.textSecondary,
+                          const SizedBox(height: 16),
+                          Text(
+                            _timeText,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          Material(
+                            color: const Color(0xFFD4AF37),
+                            borderRadius: BorderRadius.circular(50),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(50),
+                              onTap: _togglePauseResume,
+                              child: Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow,
+                                  color: Color(0xFF0A0A0F),
+                                  size: 36,
+                                ),
                               ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'TAP TO RESUME',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-            // PAUSED overlay
-            if (_isPaused)
-              Positioned.fill(
-                child: Container(
-                  color: const Color(0xDD0A0A0F),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'PAUSED',
-                          style: TextStyle(
-                            color: Color(0xFFD4AF37),
-                            fontSize: 48,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 8,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _timeText,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        Material(
-                          color: const Color(0xFFD4AF37),
-                          borderRadius: BorderRadius.circular(50),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(50),
-                            onTap: _togglePauseResume,
-                            child: Container(
-                              width: 72,
-                              height: 72,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow,
-                                color: Color(0xFF0A0A0F),
-                                size: 36,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'TAP TO RESUME',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
