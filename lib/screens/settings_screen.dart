@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/today_provider.dart';
+import '../services/export_service.dart';
 import '../services/notification_service.dart';
 import '../services/sound_service.dart';
 import 'progress_screen.dart';
@@ -218,6 +219,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           const SizedBox(height: 24),
           const _SectionTitle('Data'),
+          _SettingsTile(
+            icon: Icons.download,
+            label: 'Export All Data',
+            subtitle: 'Save sessions & loads as JSON to Downloads',
+            onTap: () async {
+              final exportService = ref.read(exportServiceProvider);
+              final path = await exportService.exportAllData();
+              if (!context.mounted) return;
+              if (path != null) {
+                final displayPath = path.contains(RegExp(r'[\\/]'))
+                    ? 'Downloads/${path.split(RegExp(r'[\\/]')).last}'
+                    : path;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Saved to $displayPath',
+                      style: const TextStyle(
+                        color: Color(0xFF0A0A0F),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    backgroundColor: const Color(0xFFD4AF37),
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Export failed. Check storage permission.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 12),
           _SettingsTile(
             icon: Icons.delete_forever,
             label: 'Reset All Progress',

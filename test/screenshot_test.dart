@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -10,7 +12,8 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_completion_screen.dart';
+import 'package:the_instrument/screens/settings_screen.dart';
+import 'package:the_instrument/services/export_service.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/services/tts_service.dart';
@@ -48,13 +51,22 @@ Future<void> captureBoundary(WidgetTester tester, GlobalKey key, String fileName
   });
 }
 
+class MockExportService extends ExportService {
+  MockExportService(super.db);
+
+  @override
+  Future<String?> exportAllData({Directory? targetDirectory}) async {
+    return 'Downloads/the_instrument_backup_20260819_223000.json';
+  }
+}
+
 void main() {
   late AppDatabase testDb;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'soundEnabled': false,
+      'soundEnabled': true,
       'haptics_enabled': true,
       'voice_instructions_enabled': true,
       'notificationEnabled': false,
@@ -75,11 +87,28 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 37: Post-Session Journal on Completion Screen', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 38: Export All Data to JSON', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Seed sample records
+    await testDb.insertSessionRecord(SessionRecordsCompanion(
+      completedAt: drift.Value(DateTime(2026, 8, 19, 9, 30)),
+      blocksCompleted: const drift.Value(9),
+      totalMinutes: const drift.Value(112),
+      intention: const drift.Value('Breath support'),
+      notes: const drift.Value('Rib expansion clicked today.'),
+      blocksJson: const drift.Value('["completed","completed"]'),
+    ));
+
+    await testDb.insertEveningLoad(EveningLoadsCompanion(
+      createdAt: drift.Value(DateTime(2026, 8, 18, 20, 0)),
+      title: const drift.Value('Hamlet Scene 2'),
+      content: const drift.Value('To be or not to be'),
+      isActive: const drift.Value(true),
+    ));
 
     final GlobalKey boundaryKey = GlobalKey();
 
@@ -89,6 +118,7 @@ void main() {
           databaseProvider.overrideWithValue(testDb),
           soundServiceProvider.overrideWithValue(NoopSoundService()),
           ttsServiceProvider.overrideWithValue(NoopTtsService()),
+          exportServiceProvider.overrideWithValue(MockExportService(testDb)),
         ],
         child: MaterialApp(
           title: appTitle,
@@ -98,45 +128,26 @@ void main() {
             key: boundaryKey,
             child: child ?? const SizedBox(),
           ),
-          home: const SessionCompletionScreen(
-            totalMinutes: 98,
-            blocksCompleted: 9,
-            blockOutcomes: [
-              'completed',
-              'completed',
-              'completed',
-              'completed',
-              'completed',
-              'completed',
-              'completed',
-              'completed',
-              'completed',
-            ],
-            intention: 'Breath support for Shakespeare monologue',
-          ),
+          home: const SettingsScreen(),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Completion Screen elements
-    expect(find.text('SESSION COMPLETE'), findsOneWidget);
-    expect(find.text('"Breath support for Shakespeare monologue"'), findsOneWidget);
-    expect(find.text('9 / ${kRoutineBlocks.length}'), findsOneWidget);
-    expect(find.text('98 min'), findsOneWidget);
-    expect(find.text('RETURN TO DASHBOARD'), findsOneWidget);
+    // Verify Export All Data tile exists
+    expect(find.text('Export All Data'), findsOneWidget);
+    expect(find.text('Save sessions & loads as JSON to Downloads'), findsOneWidget);
 
-    // Enter journal notes
-    final textField = find.byType(TextField);
-    expect(textField, findsOneWidget);
-    await tester.enterText(
-      textField,
-      'Felt the rib expansion click today. Voice was open by Block 5.',
-    );
+    // Tap Export All Data
+    await tester.tap(find.text('Export All Data'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    // Capture screenshot of completion screen with journal text entered
-    await captureBoundary(tester, boundaryKey, 'session_completion_journal.png');
+    // Verify success SnackBar is displayed
+    expect(find.text('Saved to Downloads/the_instrument_backup_20260819_223000.json'), findsOneWidget);
+
+    // Capture screenshot of Settings screen with Export All Data card and gold SnackBar
+    await captureBoundary(tester, boundaryKey, 'settings_export_data_snackbar.png');
   });
 }
