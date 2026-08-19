@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
 import '../providers/evening_load_provider.dart';
 import '../providers/today_provider.dart';
+import '../services/widget_service.dart';
 import 'evening_load_screen.dart';
 import 'session_screen.dart';
 
@@ -11,6 +12,15 @@ class TodayScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AsyncValue<DashboardStats>>(dashboardStatsProvider, (prev, next) {
+      next.whenData((stats) {
+        WidgetService.update(
+          status: stats.isCompleted ? 'Completed' : 'Not Started',
+          streak: stats.streak,
+        );
+      });
+    });
+
     final statsAsync = ref.watch(dashboardStatsProvider);
     final statusAsync = ref.watch(todayStatusProvider);
     final mostSkippedAsync = ref.watch(mostSkippedBlockProvider);
