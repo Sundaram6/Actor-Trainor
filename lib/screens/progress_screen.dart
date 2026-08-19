@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -64,6 +65,28 @@ class ProgressScreen extends ConsumerWidget {
               final formattedDate = DateFormat('EEE, MMM d').format(date);
               final formattedTime = DateFormat('h:mm a').format(date);
 
+              List<String> outcomes = List.filled(9, 'pending');
+              try {
+                final List<dynamic> parsed = jsonDecode(session.blocksJson);
+                if (parsed.isNotEmpty) {
+                  outcomes = List<String>.generate(
+                    9,
+                    (i) => i < parsed.length ? parsed[i].toString() : 'pending',
+                  );
+                } else {
+                  for (int i = 0; i < session.blocksCompleted.clamp(0, 9); i++) {
+                    outcomes[i] = 'completed';
+                  }
+                }
+              } catch (_) {
+                for (int i = 0; i < session.blocksCompleted.clamp(0, 9); i++) {
+                  outcomes[i] = 'completed';
+                }
+              }
+
+              final completedCount = outcomes.where((o) => o == 'completed').length;
+              final skippedCount = outcomes.where((o) => o == 'skipped').length;
+
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -72,6 +95,7 @@ class ProgressScreen extends ConsumerWidget {
                   border: Border.all(color: const Color(0xFF2A2A2A)),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       width: 48,
@@ -104,6 +128,44 @@ class ProgressScreen extends ConsumerWidget {
                             style: const TextStyle(
                               color: Colors.white54,
                               fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          // 9-block completion bar
+                          Row(
+                            children: List.generate(9, (blockIndex) {
+                              final outcome = outcomes[blockIndex];
+                              Color barColor;
+                              switch (outcome) {
+                                case 'completed':
+                                  barColor = const Color(0xFFD4AF37); // Gold
+                                  break;
+                                case 'skipped':
+                                  barColor = const Color(0xFF5C2A2A); // Dark Red
+                                  break;
+                                default:
+                                  barColor = const Color(0xFF2A2A2A); // Dark Grey
+                              }
+
+                              return Expanded(
+                                child: Container(
+                                  height: 4,
+                                  margin: EdgeInsets.only(right: blockIndex < 8 ? 2 : 0),
+                                  decoration: BoxDecoration(
+                                    color: barColor,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '9 blocks • $completedCount completed • $skippedCount skipped',
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],

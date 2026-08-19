@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +32,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   Timer? _timer;
   bool _isRunning = false;
   bool _isPaused = false;
+  late List<String> _blockOutcomes;
 
   @override
   void initState() {
@@ -38,6 +40,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     WidgetsBinding.instance.addObserver(this);
     unawaited(WakelockPlus.enable().catchError((_) {}));
     _currentIndex = widget.startBlockIndex;
+    _blockOutcomes = List.filled(kRoutineBlocks.length, 'pending');
     final block = kRoutineBlocks[_currentIndex];
     if (block.subSteps != null) {
       _subStepIndex = 0;
@@ -110,6 +113,9 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                   setState(() {
                     _currentIndex = saved.blockIndex;
                     _subStepIndex = saved.stepIndex;
+                    if (saved.blockOutcomes != null) {
+                      _blockOutcomes = List<String>.from(saved.blockOutcomes!);
+                    }
                     final block = kRoutineBlocks[_currentIndex];
                     _blockDurationSeconds = saved.blockDurationSeconds ??
                         (block.subSteps != null
@@ -240,7 +246,28 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                     isPaused: true,
                     startedAt: _blockStartedAt,
                     blockDurationSeconds: _blockDurationSeconds,
+                    blockOutcomes: _blockOutcomes,
                   );
+
+                  // Record session progress in DB if any blocks finished
+                  final completedBlocks = _blockOutcomes.where((o) => o == 'completed').length;
+                  if (completedBlocks > 0 || _blockOutcomes.contains('skipped')) {
+                    final db = ref.read(databaseProvider);
+                    final now = clock.now();
+                    final loggedMins = kRoutineBlocks
+                        .asMap()
+                        .entries
+                        .where((e) => _blockOutcomes[e.key] == 'completed')
+                        .fold<int>(0, (sum, e) => sum + e.value.durationMinutes);
+
+                    await db.insertSessionRecord(SessionRecordsCompanion(
+                      completedAt: drift.Value(now),
+                      blocksCompleted: drift.Value(completedBlocks),
+                      totalMinutes: drift.Value(loggedMins),
+                      blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
+                    ));
+                  }
+
                   if (dialogContext.mounted) {
                     Navigator.pop(dialogContext);
                   }
@@ -382,6 +409,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       ),
                       onPressed: () {
                         Navigator.pop(dialogContext);
+                        _blockOutcomes[_currentIndex] = 'skipped';
                         _nextBlock();
                       },
                       child: const Text(
@@ -422,6 +450,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             isPaused: _isPaused,
             startedAt: _blockStartedAt,
             blockDurationSeconds: _blockDurationSeconds,
+            blockOutcomes: _blockOutcomes,
           );
         }
       } else {
@@ -438,8 +467,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     if (hasSubSteps && _subStepIndex < block.subSteps!.length - 1) {
       _nextSubStep();
     } else if (_currentIndex < kRoutineBlocks.length - 1) {
+      _blockOutcomes[_currentIndex] = 'completed';
       _nextBlock();
     } else {
+      _blockOutcomes[_currentIndex] = 'completed';
       _onSessionComplete();
     }
   }
@@ -467,6 +498,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         isPaused: false,
         startedAt: _blockStartedAt,
         blockDurationSeconds: _blockDurationSeconds,
+        blockOutcomes: _blockOutcomes,
       );
     } else if (_isRunning) {
       // Pause
@@ -484,6 +516,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         isPaused: true,
         startedAt: _blockStartedAt,
         blockDurationSeconds: _blockDurationSeconds,
+        blockOutcomes: _blockOutcomes,
       );
     } else {
       // First start
@@ -513,6 +546,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       isPaused: _isPaused,
       startedAt: _blockStartedAt,
       blockDurationSeconds: _blockDurationSeconds,
+      blockOutcomes: _blockOutcomes,
     );
   }
 
@@ -542,6 +576,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         isPaused: false,
         startedAt: _blockStartedAt,
         blockDurationSeconds: _blockDurationSeconds,
+        blockOutcomes: _blockOutcomes,
       );
     }
   }
@@ -551,23 +586,26 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     hapticSuccess(enabled: hapticsOn);
     ref.read(soundServiceProvider).playCompletionTone();
     _timer?.cancel();
+    _blockOutcomes[_currentIndex] = 'completed';
     await SessionStateService().clearState();
     final db = ref.read(databaseProvider);
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final totalMinutes = kRoutineBlocks.fold<int>(0, (s, b) => s + b.durationMinutes);
+    final completedBlocksCount = _blockOutcomes.where((o) => o == 'completed').length;
 
     await db.insertSession(SessionsCompanion(
       date: drift.Value(now),
-      blocksCompleted: const drift.Value(9),
+      blocksCompleted: drift.Value(completedBlocksCount),
       totalMinutes: drift.Value(totalMinutes),
       isComplete: const drift.Value(true),
     ));
 
     await db.insertSessionRecord(SessionRecordsCompanion(
       completedAt: drift.Value(now),
-      blocksCompleted: const drift.Value(9),
+      blocksCompleted: drift.Value(completedBlocksCount),
       totalMinutes: drift.Value(totalMinutes),
+      blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
     ));
 
     await db.upsertDayProgress(DailyProgressCompanion(
@@ -582,7 +620,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         MaterialPageRoute(
           builder: (_) => SessionCompletionScreen(
             totalMinutes: totalMinutes,
-            blocksCompleted: 9,
+            blocksCompleted: completedBlocksCount,
+            blockOutcomes: _blockOutcomes,
           ),
         ),
       );

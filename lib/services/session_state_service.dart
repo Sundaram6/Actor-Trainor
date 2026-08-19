@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionStateService {
@@ -9,6 +10,7 @@ class SessionStateService {
   static const String _keyIsPaused = 'session_is_paused';
   static const String _keyBlockStartedAt = 'session_block_started_at';
   static const String _keyBlockDurationSeconds = 'session_block_duration_seconds';
+  static const String _keyBlockOutcomes = 'session_block_outcomes';
 
   Future<void> saveState({
     required int blockIndex,
@@ -17,6 +19,7 @@ class SessionStateService {
     bool isPaused = false,
     DateTime? startedAt,
     int? blockDurationSeconds,
+    List<String>? blockOutcomes,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyActive, true);
@@ -30,6 +33,9 @@ class SessionStateService {
     }
     if (blockDurationSeconds != null) {
       await prefs.setInt(_keyBlockDurationSeconds, blockDurationSeconds);
+    }
+    if (blockOutcomes != null) {
+      await prefs.setString(_keyBlockOutcomes, jsonEncode(blockOutcomes));
     }
   }
 
@@ -49,6 +55,14 @@ class SessionStateService {
     }
 
     final blockStartedAtMillis = prefs.getInt(_keyBlockStartedAt);
+    List<String>? blockOutcomes;
+    final outcomesRaw = prefs.getString(_keyBlockOutcomes);
+    if (outcomesRaw != null) {
+      try {
+        blockOutcomes = List<String>.from(jsonDecode(outcomesRaw));
+      } catch (_) {}
+    }
+
     return SessionSnapshot(
       blockIndex: prefs.getInt(_keyBlockIndex) ?? 0,
       stepIndex: prefs.getInt(_keyStepIndex) ?? 0,
@@ -58,6 +72,7 @@ class SessionStateService {
           ? DateTime.fromMillisecondsSinceEpoch(blockStartedAtMillis)
           : null,
       blockDurationSeconds: prefs.getInt(_keyBlockDurationSeconds),
+      blockOutcomes: blockOutcomes,
     );
   }
 
@@ -71,6 +86,7 @@ class SessionStateService {
     await prefs.remove(_keyIsPaused);
     await prefs.remove(_keyBlockStartedAt);
     await prefs.remove(_keyBlockDurationSeconds);
+    await prefs.remove(_keyBlockOutcomes);
   }
 }
 
@@ -81,6 +97,7 @@ class SessionSnapshot {
   final bool isPaused;
   final DateTime? startedAt;
   final int? blockDurationSeconds;
+  final List<String>? blockOutcomes;
 
   SessionSnapshot({
     required this.blockIndex,
@@ -89,5 +106,6 @@ class SessionSnapshot {
     this.isPaused = false,
     this.startedAt,
     this.blockDurationSeconds,
+    this.blockOutcomes,
   });
 }

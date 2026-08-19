@@ -8,18 +8,23 @@ import '../providers/today_provider.dart';
 class SessionCompletionScreen extends ConsumerWidget {
   final int? totalMinutes;
   final int? blocksCompleted;
+  final List<String>? blockOutcomes;
 
   const SessionCompletionScreen({
     super.key,
     this.totalMinutes,
     this.blocksCompleted,
+    this.blockOutcomes,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final computedTotalMinutes = totalMinutes ??
         kRoutineBlocks.fold<int>(0, (sum, b) => sum + b.durationMinutes);
-    final completedCount = blocksCompleted ?? kRoutineBlocks.length;
+    final completedCount = blocksCompleted ??
+        (blockOutcomes != null
+            ? blockOutcomes!.where((o) => o == 'completed').length
+            : kRoutineBlocks.length);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),

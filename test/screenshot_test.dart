@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -11,7 +13,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_screen.dart';
+import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,7 +68,7 @@ void main() {
     NotificationService.enabled = false;
   });
 
-  setUp(() {
+  setUp(() async {
     testDb = AppDatabase.forTesting(NativeDatabase.memory());
   });
 
@@ -74,67 +76,84 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 33: Background Timer Accuracy', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 34: Block-Level Progress Tracking Bars', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final now = DateTime(2026, 8, 19, 9, 30);
+    final sampleOutcomes1 = [
+      'completed',
+      'skipped',
+      'completed',
+      'completed',
+      'completed',
+      'completed',
+      'completed',
+      'skipped',
+      'completed',
+    ];
+
+    final sampleOutcomes2 = [
+      'completed',
+      'skipped',
+      'completed',
+      'pending',
+      'pending',
+      'pending',
+      'pending',
+      'pending',
+      'pending',
+    ];
+
+    // Seed session records with blocksJson
+    await testDb.insertSessionRecord(SessionRecordsCompanion(
+      completedAt: drift.Value(now.subtract(const Duration(days: 1))),
+      blocksCompleted: const drift.Value(2),
+      totalMinutes: const drift.Value(25),
+      blocksJson: drift.Value(jsonEncode(sampleOutcomes2)),
+    ));
+
+    await testDb.insertSessionRecord(SessionRecordsCompanion(
+      completedAt: drift.Value(now),
+      blocksCompleted: const drift.Value(7),
+      totalMinutes: const drift.Value(85),
+      blocksJson: drift.Value(jsonEncode(sampleOutcomes1)),
+    ));
+
     final GlobalKey boundaryKey = GlobalKey();
-    DateTime mockNow = DateTime(2026, 8, 19, 10, 0, 0);
 
-    await withClock(Clock(() => mockNow), () async {
-      // Start on Block 1 (Breath Lab: 02:30 on Step 1)
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(testDb),
-            soundServiceProvider.overrideWithValue(NoopSoundService()),
-          ],
-          child: MaterialApp(
-            title: appTitle,
-            debugShowCheckedModeBanner: false,
-            theme: appTheme,
-            builder: (context, child) => RepaintBoundary(
-              key: boundaryKey,
-              child: child ?? const SizedBox(),
-            ),
-            home: const SessionScreen(startBlockIndex: 0),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+          soundServiceProvider.overrideWithValue(NoopSoundService()),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: boundaryKey,
+            child: child ?? const SizedBox(),
           ),
+          home: const ProgressScreen(),
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-      // Verify session starts on Block 1 with 02:30
-      expect(find.text('BLOCK 1 OF ${kRoutineBlocks.length}'), findsOneWidget);
-      expect(find.text('02:30'), findsOneWidget);
+    // Verify Progress screen renders cards with 9-block bars
+    expect(find.text('PROGRESS'), findsOneWidget);
+    expect(find.text('9 blocks • 7 completed • 2 skipped'), findsOneWidget);
+    expect(find.text('9 blocks • 2 completed • 1 skipped'), findsOneWidget);
 
-      // Tap Play to start timer
-      final playBtn = find.byIcon(Icons.play_arrow);
-      expect(playBtn, findsWidgets);
-      await tester.tap(playBtn.first);
-      await tester.pump();
+    // Capture screenshot of Progress screen showing block-level completion bars
+    await captureBoundary(tester, boundaryKey, 'progress_block_level_bars.png');
 
-      // Advance mock wall-clock time by 10 seconds and pump timer
-      mockNow = mockNow.add(const Duration(seconds: 10));
-      await tester.pump(const Duration(seconds: 1));
-
-      // Simulate backgrounding & returning
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump(const Duration(seconds: 1));
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify timer accurately displays 02:20 from wall-clock math
-      expect(find.text('02:20'), findsOneWidget);
-
-      // Capture screenshot of the session screen with wall-clock countdown running
-      await captureBoundary(tester, boundaryKey, 'session_background_timer_accuracy.png');
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 200));
-    });
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
   });
 }
