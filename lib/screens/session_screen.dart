@@ -754,7 +754,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       isComplete: const drift.Value(true),
     ));
 
-    await db.insertSessionRecord(SessionRecordsCompanion(
+    final insertedId = await db.insertSessionRecord(SessionRecordsCompanion(
       completedAt: drift.Value(now),
       blocksCompleted: drift.Value(completedBlocksCount),
       totalMinutes: drift.Value(totalMinutes),
@@ -777,6 +777,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             blocksCompleted: completedBlocksCount,
             blockOutcomes: _blockOutcomes,
             intention: _sessionIntention,
+            sessionRecordId: insertedId,
           ),
         ),
       );

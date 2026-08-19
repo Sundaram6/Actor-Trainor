@@ -10,7 +10,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_screen.dart';
+import 'package:the_instrument/screens/session_completion_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/services/tts_service.dart';
@@ -75,7 +75,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 36: Pre-Session Intention Setting Dialog', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 37: Post-Session Journal on Completion Screen', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -98,34 +98,45 @@ void main() {
             key: boundaryKey,
             child: child ?? const SizedBox(),
           ),
-          home: const SessionScreen(startBlockIndex: 0),
+          home: const SessionCompletionScreen(
+            totalMinutes: 98,
+            blocksCompleted: 9,
+            blockOutcomes: [
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+              'completed',
+            ],
+            intention: 'Breath support for Shakespeare monologue',
+          ),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify intention dialog is shown
-    expect(find.text('Set Your Intention'), findsOneWidget);
-    expect(find.text('What are you training today?'), findsOneWidget);
-    expect(find.text('START SESSION'), findsOneWidget);
-    expect(find.text('SKIP'), findsOneWidget);
+    // Verify Completion Screen elements
+    expect(find.text('SESSION COMPLETE'), findsOneWidget);
+    expect(find.text('"Breath support for Shakespeare monologue"'), findsOneWidget);
+    expect(find.text('9 / ${kRoutineBlocks.length}'), findsOneWidget);
+    expect(find.text('98 min'), findsOneWidget);
+    expect(find.text('RETURN TO DASHBOARD'), findsOneWidget);
 
-    // Enter intention text
+    // Enter journal notes
     final textField = find.byType(TextField);
     expect(textField, findsOneWidget);
-    await tester.enterText(textField, 'Vocal resonance for audition monologue');
+    await tester.enterText(
+      textField,
+      'Felt the rib expansion click today. Voice was open by Block 5.',
+    );
     await tester.pump();
 
-    // Capture screenshot of intention dialog with text entered
-    await captureBoundary(tester, boundaryKey, 'session_intention_dialog.png');
-
-    // Tap START SESSION
-    await tester.tap(find.text('START SESSION'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    // Verify intention is displayed on the session screen
-    expect(find.text('"Vocal resonance for audition monologue"'), findsOneWidget);
+    // Capture screenshot of completion screen with journal text entered
+    await captureBoundary(tester, boundaryKey, 'session_completion_journal.png');
   });
 }

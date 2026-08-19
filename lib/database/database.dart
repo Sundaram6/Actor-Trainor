@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,6 +60,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 4) {
             await m.addColumn(sessionRecords, sessionRecords.intention);
+          }
+          if (from < 5) {
+            // Ensure notes column is migrated
+            try {
+              await m.addColumn(sessionRecords, sessionRecords.notes);
+            } catch (_) {}
           }
         },
       );
@@ -83,6 +89,10 @@ class AppDatabase extends _$AppDatabase {
   // SessionRecord queries
   Future<List<SessionRecord>> getAllSessionRecords() => select(sessionRecords).get();
   Future<int> insertSessionRecord(SessionRecordsCompanion record) => into(sessionRecords).insert(record);
+  Future<int> updateSessionRecordNotes(int id, String notes) {
+    return (update(sessionRecords)..where((s) => s.id.equals(id)))
+        .write(SessionRecordsCompanion(notes: Value(notes)));
+  }
 
   Future<int> getSessionsCountLast7Days() async {
     final now = DateTime.now();

@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app.dart';
 import '../core/constants.dart';
+import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/today_provider.dart';
+import 'progress_screen.dart';
 
-class SessionCompletionScreen extends ConsumerWidget {
+class SessionCompletionScreen extends ConsumerStatefulWidget {
   final int? totalMinutes;
   final int? blocksCompleted;
   final List<String>? blockOutcomes;
   final String? intention;
+  final int? sessionRecordId;
 
   const SessionCompletionScreen({
     super.key,
@@ -17,33 +20,68 @@ class SessionCompletionScreen extends ConsumerWidget {
     this.blocksCompleted,
     this.blockOutcomes,
     this.intention,
+    this.sessionRecordId,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final computedTotalMinutes = totalMinutes ??
+  ConsumerState<SessionCompletionScreen> createState() => _SessionCompletionScreenState();
+}
+
+class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScreen> {
+  final TextEditingController _notesController = TextEditingController();
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleReturn() async {
+    final noteText = _notesController.text.trim();
+    if (noteText.isNotEmpty && widget.sessionRecordId != null) {
+      final db = ref.read(databaseProvider);
+      await db.updateSessionRecordNotes(widget.sessionRecordId!, noteText);
+    }
+
+    ref.invalidate(statsProvider);
+    ref.invalidate(weekProgressProvider);
+    ref.invalidate(recentSessionsProvider);
+    ref.invalidate(todayStatusProvider);
+    ref.invalidate(dashboardStatsProvider);
+    ref.invalidate(sessionHistoryProvider);
+
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainShellScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final computedTotalMinutes = widget.totalMinutes ??
         kRoutineBlocks.fold<int>(0, (sum, b) => sum + b.durationMinutes);
-    final completedCount = blocksCompleted ??
-        (blockOutcomes != null
-            ? blockOutcomes!.where((o) => o == 'completed').length
+    final completedCount = widget.blocksCompleted ??
+        (widget.blockOutcomes != null
+            ? widget.blockOutcomes!.where((o) => o == 'completed').length
             : kRoutineBlocks.length);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
+              const SizedBox(height: 24),
               const Icon(
                 Icons.check_circle_outline,
                 size: 80,
                 color: Color(0xFFD4AF37),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               const Text(
                 'SESSION COMPLETE',
                 textAlign: TextAlign.center,
@@ -54,7 +92,7 @@ class SessionCompletionScreen extends ConsumerWidget {
                   letterSpacing: 2,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               const Text(
                 'The work is done. Leave it in the room.',
                 textAlign: TextAlign.center,
@@ -64,8 +102,8 @@ class SessionCompletionScreen extends ConsumerWidget {
                   height: 1.5,
                 ),
               ),
-              if (intention?.isNotEmpty == true) ...[
-                const SizedBox(height: 24),
+              if (widget.intention?.isNotEmpty == true) ...[
+                const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
@@ -74,7 +112,7 @@ class SessionCompletionScreen extends ConsumerWidget {
                     border: Border.all(color: const Color(0xFF2A2A2A)),
                   ),
                   child: Text(
-                    '"$intention"',
+                    '"${widget.intention}"',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
@@ -84,7 +122,7 @@ class SessionCompletionScreen extends ConsumerWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               _StatRow(
                 label: 'Blocks Completed',
                 value: '$completedCount / ${kRoutineBlocks.length}',
@@ -99,19 +137,35 @@ class SessionCompletionScreen extends ConsumerWidget {
                 label: 'Status',
                 value: 'Closed',
               ),
-              const Spacer(),
+              const SizedBox(height: 20),
+              // Journal input field
+              TextField(
+                controller: _notesController,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: "What landed? What didn't?",
+                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+                  filled: true,
+                  fillColor: const Color(0xFF141419),
+                  contentPadding: const EdgeInsets.all(16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  ref.invalidate(statsProvider);
-                  ref.invalidate(weekProgressProvider);
-                  ref.invalidate(recentSessionsProvider);
-                  ref.invalidate(todayStatusProvider);
-                  ref.invalidate(dashboardStatsProvider);
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const MainShellScreen()),
-                    (route) => false,
-                  );
-                },
+                onPressed: _handleReturn,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD4AF37),
                   foregroundColor: Colors.black,

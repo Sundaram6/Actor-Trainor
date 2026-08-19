@@ -141,6 +141,18 @@ class ProgressScreen extends ConsumerWidget {
                               ),
                             ),
                           ],
+                          if (session.notes?.isNotEmpty == true) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              session.notes!,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 13,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                           const SizedBox(height: 10),
                           // 9-block completion bar
                           Row(
