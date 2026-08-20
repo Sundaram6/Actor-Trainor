@@ -55,13 +55,21 @@ class SessionCheckIns extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads, SessionNotes, SessionCheckIns])
+class BlockNotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sessionId => integer().references(SessionRecords, #id)();
+  IntColumn get blockIndex => integer()(); // 0–8
+  TextColumn get note => text()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads, SessionNotes, SessionCheckIns, BlockNotes])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -93,6 +101,9 @@ class AppDatabase extends _$AppDatabase {
           if (from < 8) {
             await m.addColumn(sessionRecords, sessionRecords.qualityRating);
           }
+          if (from < 9) {
+            await m.createTable(blockNotes);
+          }
         },
       );
 
@@ -115,6 +126,9 @@ class AppDatabase extends _$AppDatabase {
   // SessionRecord queries
   Future<List<SessionRecord>> get allSessionRecords => select(sessionRecords).get();
   Future<List<SessionRecord>> getAllSessionRecords() => select(sessionRecords).get();
+  Future<SessionRecord?> getSessionRecordById(int id) {
+    return (select(sessionRecords)..where((s) => s.id.equals(id))).getSingleOrNull();
+  }
   Future<int> insertSessionRecord(SessionRecordsCompanion record) => into(sessionRecords).insert(record);
   Future<int> updateSessionRecordNotes(int id, String notes) {
     return (update(sessionRecords)..where((s) => s.id.equals(id)))

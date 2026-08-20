@@ -2226,6 +2226,356 @@ class SessionCheckInsCompanion extends UpdateCompanion<SessionCheckIn> {
   }
 }
 
+class $BlockNotesTable extends BlockNotes
+    with TableInfo<$BlockNotesTable, BlockNote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BlockNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _blockIndexMeta = const VerificationMeta(
+    'blockIndex',
+  );
+  @override
+  late final GeneratedColumn<int> blockIndex = GeneratedColumn<int>(
+    'block_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    blockIndex,
+    note,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'block_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BlockNote> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('block_index')) {
+      context.handle(
+        _blockIndexMeta,
+        blockIndex.isAcceptableOrUnknown(data['block_index']!, _blockIndexMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_blockIndexMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BlockNote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BlockNote(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}session_id'],
+      )!,
+      blockIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}block_index'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BlockNotesTable createAlias(String alias) {
+    return $BlockNotesTable(attachedDatabase, alias);
+  }
+}
+
+class BlockNote extends DataClass implements Insertable<BlockNote> {
+  final int id;
+  final int sessionId;
+  final int blockIndex;
+  final String note;
+  final DateTime createdAt;
+  const BlockNote({
+    required this.id,
+    required this.sessionId,
+    required this.blockIndex,
+    required this.note,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<int>(sessionId);
+    map['block_index'] = Variable<int>(blockIndex);
+    map['note'] = Variable<String>(note);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  BlockNotesCompanion toCompanion(bool nullToAbsent) {
+    return BlockNotesCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      blockIndex: Value(blockIndex),
+      note: Value(note),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory BlockNote.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BlockNote(
+      id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<int>(json['sessionId']),
+      blockIndex: serializer.fromJson<int>(json['blockIndex']),
+      note: serializer.fromJson<String>(json['note']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<int>(sessionId),
+      'blockIndex': serializer.toJson<int>(blockIndex),
+      'note': serializer.toJson<String>(note),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  BlockNote copyWith({
+    int? id,
+    int? sessionId,
+    int? blockIndex,
+    String? note,
+    DateTime? createdAt,
+  }) => BlockNote(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    blockIndex: blockIndex ?? this.blockIndex,
+    note: note ?? this.note,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  BlockNote copyWithCompanion(BlockNotesCompanion data) {
+    return BlockNote(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      blockIndex: data.blockIndex.present
+          ? data.blockIndex.value
+          : this.blockIndex,
+      note: data.note.present ? data.note.value : this.note,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BlockNote(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('blockIndex: $blockIndex, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, sessionId, blockIndex, note, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BlockNote &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.blockIndex == this.blockIndex &&
+          other.note == this.note &&
+          other.createdAt == this.createdAt);
+}
+
+class BlockNotesCompanion extends UpdateCompanion<BlockNote> {
+  final Value<int> id;
+  final Value<int> sessionId;
+  final Value<int> blockIndex;
+  final Value<String> note;
+  final Value<DateTime> createdAt;
+  const BlockNotesCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.blockIndex = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  BlockNotesCompanion.insert({
+    this.id = const Value.absent(),
+    required int sessionId,
+    required int blockIndex,
+    required String note,
+    this.createdAt = const Value.absent(),
+  }) : sessionId = Value(sessionId),
+       blockIndex = Value(blockIndex),
+       note = Value(note);
+  static Insertable<BlockNote> custom({
+    Expression<int>? id,
+    Expression<int>? sessionId,
+    Expression<int>? blockIndex,
+    Expression<String>? note,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (blockIndex != null) 'block_index': blockIndex,
+      if (note != null) 'note': note,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  BlockNotesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? sessionId,
+    Value<int>? blockIndex,
+    Value<String>? note,
+    Value<DateTime>? createdAt,
+  }) {
+    return BlockNotesCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      blockIndex: blockIndex ?? this.blockIndex,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (blockIndex.present) {
+      map['block_index'] = Variable<int>(blockIndex.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BlockNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('blockIndex: $blockIndex, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2237,6 +2587,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SessionCheckInsTable sessionCheckIns = $SessionCheckInsTable(
     this,
   );
+  late final $BlockNotesTable blockNotes = $BlockNotesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2248,6 +2599,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     eveningLoads,
     sessionNotes,
     sessionCheckIns,
+    blockNotes,
   ];
 }
 
@@ -3470,6 +3822,199 @@ typedef $$SessionCheckInsTableProcessedTableManager =
       SessionCheckIn,
       PrefetchHooks Function()
     >;
+typedef $$BlockNotesTableCreateCompanionBuilder =
+    BlockNotesCompanion Function({
+      Value<int> id,
+      required int sessionId,
+      required int blockIndex,
+      required String note,
+      Value<DateTime> createdAt,
+    });
+typedef $$BlockNotesTableUpdateCompanionBuilder =
+    BlockNotesCompanion Function({
+      Value<int> id,
+      Value<int> sessionId,
+      Value<int> blockIndex,
+      Value<String> note,
+      Value<DateTime> createdAt,
+    });
+
+class $$BlockNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $BlockNotesTable> {
+  $$BlockNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get blockIndex => $composableBuilder(
+    column: $table.blockIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BlockNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BlockNotesTable> {
+  $$BlockNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get blockIndex => $composableBuilder(
+    column: $table.blockIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BlockNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BlockNotesTable> {
+  $$BlockNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<int> get blockIndex => $composableBuilder(
+    column: $table.blockIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$BlockNotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BlockNotesTable,
+          BlockNote,
+          $$BlockNotesTableFilterComposer,
+          $$BlockNotesTableOrderingComposer,
+          $$BlockNotesTableAnnotationComposer,
+          $$BlockNotesTableCreateCompanionBuilder,
+          $$BlockNotesTableUpdateCompanionBuilder,
+          (
+            BlockNote,
+            BaseReferences<_$AppDatabase, $BlockNotesTable, BlockNote>,
+          ),
+          BlockNote,
+          PrefetchHooks Function()
+        > {
+  $$BlockNotesTableTableManager(_$AppDatabase db, $BlockNotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BlockNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BlockNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BlockNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> sessionId = const Value.absent(),
+                Value<int> blockIndex = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BlockNotesCompanion(
+                id: id,
+                sessionId: sessionId,
+                blockIndex: blockIndex,
+                note: note,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int sessionId,
+                required int blockIndex,
+                required String note,
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BlockNotesCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                blockIndex: blockIndex,
+                note: note,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BlockNotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BlockNotesTable,
+      BlockNote,
+      $$BlockNotesTableFilterComposer,
+      $$BlockNotesTableOrderingComposer,
+      $$BlockNotesTableAnnotationComposer,
+      $$BlockNotesTableCreateCompanionBuilder,
+      $$BlockNotesTableUpdateCompanionBuilder,
+      (BlockNote, BaseReferences<_$AppDatabase, $BlockNotesTable, BlockNote>),
+      BlockNote,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3486,4 +4031,6 @@ class $AppDatabaseManager {
       $$SessionNotesTableTableManager(_db, _db.sessionNotes);
   $$SessionCheckInsTableTableManager get sessionCheckIns =>
       $$SessionCheckInsTableTableManager(_db, _db.sessionCheckIns);
+  $$BlockNotesTableTableManager get blockNotes =>
+      $$BlockNotesTableTableManager(_db, _db.blockNotes);
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../core/constants.dart';
+import '../providers/block_notes_provider.dart';
 import '../providers/database_provider.dart';
 import '../providers/session_checkin_provider.dart';
 import '../database/database.dart';
@@ -54,6 +55,98 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   late List<String?> _skipReasons;
   String? _sessionIntention;
   final TextEditingController _intentionController = TextEditingController();
+  final Map<int, String> _pendingBlockNotes = {};
+
+  Future<void> _showBlockNoteSheet(BuildContext context, int blockIndex) async {
+    final block = kRoutineBlocks[blockIndex];
+    final controller = TextEditingController(text: _pendingBlockNotes[blockIndex] ?? '');
+
+    final note = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'NOTE: ${block.name.toUpperCase()}',
+              style: const TextStyle(
+                color: Color(0xFFD4AF37),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Note on ${block.name}...',
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: const Color(0xFF0A0A0A),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text('CANCEL', style: TextStyle(color: Colors.white38)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: const Color(0xFF0A0A0A),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    final text = controller.text.trim();
+                    Navigator.pop(sheetContext, text);
+                  },
+                  child: const Text('SAVE'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (note != null) {
+      setState(() {
+        if (note.isEmpty) {
+          _pendingBlockNotes.remove(blockIndex);
+        } else {
+          _pendingBlockNotes[blockIndex] = note;
+        }
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -464,6 +557,16 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                         widget.initialPhysical!,
                       );
                     }
+
+                    for (final entry in _pendingBlockNotes.entries) {
+                      if (entry.value.trim().isNotEmpty) {
+                        await ref.read(saveBlockNoteProvider)(
+                          insertedId,
+                          entry.key,
+                          entry.value.trim(),
+                        );
+                      }
+                    }
                   }
 
                   if (dialogContext.mounted) {
@@ -770,6 +873,16 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       );
     }
 
+    for (final entry in _pendingBlockNotes.entries) {
+      if (entry.value.trim().isNotEmpty) {
+        await ref.read(saveBlockNoteProvider)(
+          insertedId,
+          entry.key,
+          entry.value.trim(),
+        );
+      }
+    }
+
     await db.upsertDayProgress(DailyProgressCompanion(
       date: drift.Value(today),
       completed: const drift.Value(true),
@@ -975,10 +1088,16 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                         ),
                       ),
                     const SizedBox(height: 24),
-                    // 3-button control row
+                    // Control row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_note_outlined, color: Color(0xFFD4AF37), size: 28),
+                          tooltip: 'Block Note',
+                          onPressed: () => _showBlockNoteSheet(context, _currentIndex),
+                        ),
+                        const SizedBox(width: 12),
                         // Pause / Resume button
                         _ControlButton(
                           icon: _isPaused
@@ -986,7 +1105,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                               : (_isRunning ? Icons.pause : Icons.play_arrow),
                           onPressed: _togglePauseResume,
                         ),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: 16),
                         // Next sub-step button
                         _ControlButton(
                           icon: Icons.skip_next,
@@ -996,7 +1115,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                                   ? _nextSubStep
                                   : null),
                         ),
-                        const SizedBox(width: 24),
+                        const SizedBox(width: 16),
                         // Skip block / Complete button
                         _ControlButton(
                           icon: isLastBlock ? Icons.check : Icons.fast_forward,

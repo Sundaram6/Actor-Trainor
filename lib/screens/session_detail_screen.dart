@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/constants.dart' show allBlocks;
 import '../database/database.dart';
+import '../providers/block_notes_provider.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/session_checkin_provider.dart';
@@ -194,7 +195,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             const _SectionTitle(title: 'BLOCK BREAKDOWN'),
             const SizedBox(height: 12),
             _DarkCard(
-              child: Column(children: _parseBlocks().map((b) => _BlockRow(block: b)).toList()),
+              child: Column(children: _parseBlocks().map((b) => _BlockRow(block: b, sessionId: widget.record.id)).toList()),
             ),
             const SizedBox(height: 24),
 
@@ -284,21 +285,23 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     if (widget.record.blocksJson.isNotEmpty) {
       try {
         final List<dynamic> decoded = jsonDecode(widget.record.blocksJson);
-        return decoded.asMap().entries.map((e) {
-          final idx = e.key;
-          String status;
-          String? reason;
-          if (e.value is Map) {
-            final map = e.value as Map<String, dynamic>;
-            status = (map['status'] as String? ?? 'skipped').toLowerCase();
-            reason = map['reason'] as String?;
-          } else {
-            status = (e.value as String? ?? 'skipped').toLowerCase();
-            reason = null;
-          }
-          final name = idx < allBlocks.length ? allBlocks[idx].title : 'Block ${idx + 1}';
-          return {'index': idx, 'name': name, 'completed': status == 'completed', 'reason': reason};
-        }).toList();
+        if (decoded.isNotEmpty) {
+          return decoded.asMap().entries.map((e) {
+            final idx = e.key;
+            String status;
+            String? reason;
+            if (e.value is Map) {
+              final map = e.value as Map<String, dynamic>;
+              status = (map['status'] as String? ?? 'skipped').toLowerCase();
+              reason = map['reason'] as String?;
+            } else {
+              status = (e.value as String? ?? 'skipped').toLowerCase();
+              reason = null;
+            }
+            final name = idx < allBlocks.length ? allBlocks[idx].title : 'Block ${idx + 1}';
+            return {'index': idx, 'name': name, 'completed': status == 'completed', 'reason': reason};
+          }).toList();
+        }
       } catch (_) {}
     }
     return List.generate(totalBlocks, (i) {
@@ -424,7 +427,8 @@ class _DarkCard extends StatelessWidget {
 
 class _BlockRow extends StatelessWidget {
   final Map<String, dynamic> block;
-  const _BlockRow({required this.block});
+  final int sessionId;
+  const _BlockRow({required this.block, required this.sessionId});
 
   @override
   Widget build(BuildContext context) {
@@ -436,41 +440,75 @@ class _BlockRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: completed ? gold.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-              border: Border.all(color: completed ? gold : Colors.white24),
-            ),
-            alignment: Alignment.center,
-            child: Text('${index + 1}', style: TextStyle(color: completed ? gold : Colors.white38, fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    color: completed ? Colors.white.withValues(alpha: 0.9) : Colors.white38,
-                    fontSize: 14,
-                    fontWeight: completed ? FontWeight.w500 : FontWeight.normal,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: completed ? gold.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: completed ? gold : Colors.white24),
                 ),
-                if (!completed && reason != null)
-                  Text(
-                    reason,
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-              ],
-            ),
+                alignment: Alignment.center,
+                child: Text('${index + 1}', style: TextStyle(color: completed ? gold : Colors.white38, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: completed ? Colors.white.withValues(alpha: 0.9) : Colors.white38,
+                        fontSize: 14,
+                        fontWeight: completed ? FontWeight.w500 : FontWeight.normal,
+                      ),
+                    ),
+                    if (!completed && reason != null)
+                      Text(
+                        reason,
+                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      ),
+                  ],
+                ),
+              ),
+              Icon(completed ? Icons.check_rounded : Icons.remove_rounded, color: completed ? gold : Colors.white24, size: 18),
+            ],
           ),
-          Icon(completed ? Icons.check_rounded : Icons.remove_rounded, color: completed ? gold : Colors.white24, size: 18),
+          Consumer(
+            builder: (context, ref, child) {
+              final notesAsync = ref.watch(blockNotesForSessionProvider(sessionId));
+              return notesAsync.when(
+                data: (notes) {
+                  final note = notes[index];
+                  if (note == null || note.isEmpty) return const SizedBox.shrink();
+                  return Container(
+                    margin: const EdgeInsets.only(top: 8, left: 40),
+                    padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
+                    decoration: const BoxDecoration(
+                      border: Border(left: BorderSide(color: Color(0xFFD4AF37), width: 2)),
+                    ),
+                    child: Text(
+                      note,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.5,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+              );
+            },
+          ),
         ],
       ),
     );

@@ -17,6 +17,7 @@ import 'package:the_instrument/screens/journal_screen.dart';
 import 'package:the_instrument/screens/onboarding_screen.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
+import 'package:the_instrument/screens/session_detail_screen.dart';
 import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/screens/today_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
@@ -195,8 +196,10 @@ void main() {
 
     expect(find.text('To stay present under pressure'), findsWidgets);
     expect(find.byIcon(Icons.brightness_5_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.edit_note_outlined), findsOneWidget);
 
     await captureBoundary(tester, rootKey, 'session_intention_display.png');
+    await captureBoundary(tester, rootKey, 'session_block_notes_bar.png');
   });
 
   testWidgets('WeeklyReportCard renders with data', (WidgetTester tester) async {
@@ -505,6 +508,55 @@ void main() {
     expect(find.text('Minutes'), findsOneWidget);
 
     await captureBoundary(tester, rootKey, 'today_weekly_goals.png');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('SessionDetailScreen block notes render', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    // Insert mock session + block note
+    final sessionId = await testDb.insertSessionRecord(
+      SessionRecordsCompanion.insert(
+        completedAt: DateTime.now(),
+        blocksCompleted: 9,
+        totalMinutes: 112,
+      ),
+    );
+    await testDb.into(testDb.blockNotes).insert(
+      BlockNotesCompanion.insert(
+        sessionId: sessionId,
+        blockIndex: 2,
+        note: 'Tension in shoulders during memory recall. Need to soften the neck before entering.',
+      ),
+    );
+
+    final record = await testDb.getSessionRecordById(sessionId);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: SessionDetailScreen(record: record!),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Tension in shoulders'), findsOneWidget);
+    await captureBoundary(tester, rootKey, 'session_detail_block_notes.png');
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
   });
