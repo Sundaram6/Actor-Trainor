@@ -5,6 +5,7 @@ import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/today_provider.dart';
 import '../services/export_service.dart';
+import '../services/import_service.dart';
 import '../services/notification_service.dart';
 import '../services/sound_service.dart';
 import 'package:share_plus/share_plus.dart';
@@ -267,6 +268,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SnackBar(
                     content: Text('Export failed. Check storage permission.'),
                     backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.upload_file,
+            label: 'Import Sessions',
+            subtitle: 'Restore from JSON backup',
+            onTap: () async {
+              final importService = ref.read(importServiceProvider);
+              final result = await importService.importSessionsFromJson();
+
+              if (result.imported > 0) {
+                ref.invalidate(statsProvider);
+                ref.invalidate(weekProgressProvider);
+                ref.invalidate(recentSessionsProvider);
+                ref.invalidate(todayStatusProvider);
+                ref.invalidate(dashboardStatsProvider);
+                ref.invalidate(sessionHistoryProvider);
+              }
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result.message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    backgroundColor: result.isSuccess
+                        ? const Color(0xFF1B5E20)
+                        : const Color(0xFF424242),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               }
