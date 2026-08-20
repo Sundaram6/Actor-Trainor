@@ -11,9 +11,16 @@ class CheckInScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckInScreenState extends ConsumerState<CheckInScreen> {
+  final TextEditingController _roleController = TextEditingController();
   int _energy = 3;
   int _focus = 3;
   int _physical = 3;
+
+  @override
+  void dispose() {
+    _roleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +42,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,13 +51,27 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                 'Before you begin, mark where you are right now. This helps you track how your condition affects your work over time.',
                 style: TextStyle(color: Colors.white38, fontSize: 14, height: 1.5),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _roleController,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Role or scene (e.g. Hamlet, Commercial Audition)',
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A1A),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFD4AF37))),
+                  prefixIcon: const Icon(Icons.theaters_outlined, color: Colors.white24, size: 20),
+                ),
+              ),
+              const SizedBox(height: 24),
               _buildSlider('Energy', 'How awake and vital do you feel?', _energy, (v) => setState(() => _energy = v)),
               const SizedBox(height: 24),
               _buildSlider('Focus', 'How present is your attention?', _focus, (v) => setState(() => _focus = v)),
               const SizedBox(height: 24),
               _buildSlider('Body', 'How loose and available is your instrument?', _physical, (v) => setState(() => _physical = v)),
-              const Spacer(),
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -62,6 +83,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   onPressed: () {
+                    final role = _roleController.text.trim();
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (_) => SessionScreen(
@@ -69,6 +91,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                           initialEnergy: _energy,
                           initialFocus: _focus,
                           initialPhysical: _physical,
+                          roleTag: role.isNotEmpty ? role : null,
                         ),
                       ),
                     );

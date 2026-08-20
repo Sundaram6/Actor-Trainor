@@ -20,6 +20,7 @@ class SessionRecords extends Table {
   TextColumn get blocksJson => text().withDefault(const Constant('[]'))();
   TextColumn get intention => text().nullable()();
   IntColumn get qualityRating => integer().nullable()();
+  TextColumn get roleTag => text().nullable()();
 }
 
 class DailyProgress extends Table {
@@ -69,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -103,6 +104,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 9) {
             await m.createTable(blockNotes);
+          }
+          if (from < 10) {
+            await m.addColumn(sessionRecords, sessionRecords.roleTag);
           }
         },
       );

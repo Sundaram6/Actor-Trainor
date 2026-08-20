@@ -214,6 +214,29 @@ class ProgressScreen extends ConsumerWidget {
                                   fontSize: 13,
                                 ),
                               ),
+                              if (session.roleTag != null && session.roleTag!.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1A1A1A),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
+                                    ),
+                                    child: Text(
+                                      session.roleTag!.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Color(0xFFD4AF37),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                               if (session.intention?.isNotEmpty == true) ...[
                                 const SizedBox(height: 6),
                                 Text(

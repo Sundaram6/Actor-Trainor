@@ -124,6 +124,20 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   ),
               ],
             ),
+            if (widget.record.roleTag != null && widget.record.roleTag!.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: gold.withValues(alpha: 0.2)),
+                ),
+                child: Text(
+                  widget.record.roleTag!.toUpperCase(),
+                  style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8),
+                ),
+              ),
             const SizedBox(height: 24),
 
             Row(

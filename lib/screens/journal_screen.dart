@@ -94,6 +94,26 @@ class JournalScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
+                        if (entry.session.roleTag != null && entry.session.roleTag!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0A0A0A),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: gold.withValues(alpha: 0.2)),
+                            ),
+                            child: Text(
+                              entry.session.roleTag!.toUpperCase(),
+                              style: const TextStyle(
+                                color: gold,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,

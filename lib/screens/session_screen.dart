@@ -26,6 +26,7 @@ class SessionScreen extends ConsumerStatefulWidget {
   final int? initialEnergy;
   final int? initialFocus;
   final int? initialPhysical;
+  final String? roleTag;
 
   const SessionScreen({
     super.key,
@@ -34,6 +35,7 @@ class SessionScreen extends ConsumerStatefulWidget {
     this.initialEnergy,
     this.initialFocus,
     this.initialPhysical,
+    this.roleTag,
   });
 
   @override
@@ -545,6 +547,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       totalMinutes: drift.Value(loggedMins),
                       blocksJson: drift.Value(jsonEncode(blocksData)),
                       intention: drift.Value(_sessionIntention),
+                      roleTag: drift.Value(widget.roleTag?.isNotEmpty == true ? widget.roleTag : null),
                     ));
 
                     if (widget.initialEnergy != null &&
@@ -860,6 +863,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       blocksJson: drift.Value(jsonEncode(blocksData)),
       intention: drift.Value(_sessionIntention),
       notes: drift.Value(notes),
+      roleTag: drift.Value(widget.roleTag?.isNotEmpty == true ? widget.roleTag : null),
     ));
 
     if (widget.initialEnergy != null &&
