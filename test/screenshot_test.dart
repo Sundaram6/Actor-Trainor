@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:drift/native.dart';
@@ -11,9 +10,9 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
+import 'package:the_instrument/widgets/notes_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -75,21 +74,11 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('SessionScreen resume dialog shows block context', (WidgetTester tester) async {
+  testWidgets('NotesBottomSheet renders correctly', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
-    // Pre-seed a saved session state with intention
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('session_state', jsonEncode({
-      'currentBlockIndex': 4,
-      'currentSubStepIndex': 1,
-      'elapsedSeconds': 3600,
-      'startedAt': DateTime(2026, 8, 20, 14, 30).toIso8601String(),
-      'intention': 'To stay present under pressure',
-    }));
 
     final GlobalKey rootKey = GlobalKey();
 
@@ -106,18 +95,35 @@ void main() {
             key: rootKey,
             child: child ?? const SizedBox(),
           ),
-          home: const SessionScreen(),
+          home: Builder(
+            builder: (context) => Scaffold(
+              backgroundColor: const Color(0xFF0A0A0A),
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const NotesBottomSheet(),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text('Resume Session?'), findsOneWidget);
-    expect(find.text('START FRESH'), findsOneWidget);
-    expect(find.text('RESUME'), findsOneWidget);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
 
-    await captureBoundary(tester, rootKey, 'session_resume_dialog.png');
+    expect(find.byType(NotesBottomSheet), findsOneWidget);
+    expect(find.text('Session Reflections'), findsOneWidget);
+    expect(find.text('SAVE & CONTINUE'), findsOneWidget);
+    expect(find.text('SKIP'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'notes_bottom_sheet.png');
   });
 }

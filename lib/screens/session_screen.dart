@@ -12,6 +12,7 @@ import '../services/tts_service.dart';
 import '../widgets/breathing_guide.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
+import '../widgets/notes_bottom_sheet.dart';
 import 'session_completion_screen.dart';
 import 'settings_screen.dart';
 import '../services/widget_service.dart';
@@ -765,6 +766,18 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     _timer?.cancel();
     _blockOutcomes[_currentIndex] = 'completed';
     await SessionStateService().clearState();
+
+    if (!mounted) return;
+
+    final notes = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const NotesBottomSheet(),
+    );
+
+    if (!mounted) return;
+
     final db = ref.read(databaseProvider);
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -784,6 +797,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       totalMinutes: drift.Value(totalMinutes),
       blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
       intention: drift.Value(_sessionIntention),
+      notes: drift.Value(notes),
     ));
 
     await db.upsertDayProgress(DailyProgressCompanion(
@@ -796,18 +810,19 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     await WidgetService.update(isCompleted: true, streak: updatedStreak, inProgress: false);
 
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => SessionCompletionScreen(
             totalMinutes: totalMinutes,
             blocksCompleted: completedBlocksCount,
             blockOutcomes: _blockOutcomes,
             intention: _sessionIntention,
+            notes: notes,
             sessionRecordId: insertedId,
             streak: updatedStreak,
           ),
         ),
+        (route) => route.isFirst,
       );
     }
   }

@@ -13,6 +13,7 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
   final int? blocksCompleted;
   final List<String>? blockOutcomes;
   final String? intention;
+  final String? notes;
   final int? sessionRecordId;
   final int? streak;
 
@@ -22,6 +23,7 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
     this.blocksCompleted,
     this.blockOutcomes,
     this.intention,
+    this.notes,
     this.sessionRecordId,
     this.streak,
   });
@@ -31,7 +33,13 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
 }
 
 class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScreen> {
-  final TextEditingController _notesController = TextEditingController();
+  late final TextEditingController _notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController(text: widget.notes ?? '');
+  }
 
   @override
   void dispose() {
