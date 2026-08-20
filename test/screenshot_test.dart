@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -11,8 +10,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/settings_screen.dart';
-import 'package:the_instrument/services/export_service.dart';
+import 'package:the_instrument/screens/session_detail_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,12 +47,12 @@ Future<void> captureBoundary(WidgetTester tester, GlobalKey key, String fileName
   });
 }
 
-class AndroidJsonShareSheetModalPreview extends StatelessWidget {
-  final String jsonText;
+class AndroidSessionRecordShareSheetModalPreview extends StatelessWidget {
+  final String shareText;
 
-  const AndroidJsonShareSheetModalPreview({
+  const AndroidSessionRecordShareSheetModalPreview({
     super.key,
-    required this.jsonText,
+    required this.shareText,
   });
 
   @override
@@ -66,14 +64,14 @@ class AndroidJsonShareSheetModalPreview extends StatelessWidget {
           Positioned.fill(
             child: Opacity(
               opacity: 0.4,
-              child: Container(color: const Color(0xFF0D0D0D)),
+              child: Container(color: const Color(0xFF0A0A0A)),
             ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
               width: double.infinity,
-              height: 480,
+              height: 400,
               decoration: const BoxDecoration(
                 color: Color(0xFF1E2026),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -104,10 +102,10 @@ class AndroidJsonShareSheetModalPreview extends StatelessWidget {
                   // Title row
                   Row(
                     children: const [
-                      Icon(Icons.download_outlined, color: Color(0xFFD4AF37), size: 20),
+                      Icon(Icons.share, color: Color(0xFFD4AF37), size: 20),
                       SizedBox(width: 10),
                       Text(
-                        'Export Session History',
+                        'Share via',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -119,38 +117,33 @@ class AndroidJsonShareSheetModalPreview extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  // JSON Preview code box
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF121318),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF2C2F3B)),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          jsonText,
-                          style: const TextStyle(
-                            color: Color(0xFFD4AF37),
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                            height: 1.4,
-                          ),
-                        ),
+                  // Shared text content preview
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121318),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF2C2F3B)),
+                    ),
+                    child: Text(
+                      shareText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.4,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const Spacer(),
                   // App targets row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
+                    children: const [
                       _ShareTarget(icon: Icons.message, label: 'Messages', color: Colors.blue),
                       _ShareTarget(icon: Icons.chat, label: 'WhatsApp', color: Colors.green),
-                      _ShareTarget(icon: Icons.copy, label: 'Copy JSON', color: const Color(0xFFD4AF37)),
-                      _ShareTarget(icon: Icons.mail, label: 'Coach Email', color: Colors.orange),
+                      _ShareTarget(icon: Icons.copy, label: 'Copy Link', color: Color(0xFFD4AF37)),
+                      _ShareTarget(icon: Icons.note_alt, label: 'Notes', color: Colors.orange),
                       _ShareTarget(icon: Icons.more_horiz, label: 'More', color: Colors.grey),
                     ],
                   ),
@@ -179,7 +172,7 @@ class _ShareTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: BuildContext != null ? MainAxisSize.min : MainAxisSize.max,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 48,
@@ -228,65 +221,64 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('Micro-Phase 47: Export Session History tile and JSON share sheet preview', (WidgetTester tester) async {
+  testWidgets('Micro-Phase 48: SessionDetailScreen and Share sheet preview', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    // Insert sample session records for export preview
-    await testDb.insertSessionRecord(SessionRecordsCompanion.insert(
+    // Insert sample session record
+    final sampleRecord = SessionRecord(
+      id: 1,
       completedAt: DateTime(2026, 8, 19, 9, 30),
       blocksCompleted: 9,
       totalMinutes: 98,
-      intention: const drift.Value('Breath support and voice resonance'),
-      notes: const drift.Value('Strong physical grounding throughout'),
-      blocksJson: const drift.Value('["completed","completed","completed","completed","completed","completed","completed","completed","completed"]'),
-    ));
-    await testDb.insertSessionRecord(SessionRecordsCompanion.insert(
-      completedAt: DateTime(2026, 8, 18, 10, 0),
-      blocksCompleted: 9,
-      totalMinutes: 98,
-      intention: const drift.Value('Shakespeare monologue pacing'),
-      notes: const drift.Value('Text work flowed with ease'),
-      blocksJson: const drift.Value('["completed","completed","completed","completed","completed","completed","completed","completed","completed"]'),
-    ));
+      intention: 'Breath support and voice resonance',
+      notes: 'Strong physical grounding throughout. Text work flowed naturally with great breath pacing.',
+      blocksJson: '["completed","completed","completed","completed","completed","completed","completed","completed","completed"]',
+    );
 
-    final GlobalKey settingsKey = GlobalKey();
+    final GlobalKey detailKey = GlobalKey();
 
-    // 1. Settings screen with Export Session History tile
+    // 1. SessionDetailScreen
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(testDb),
-          exportServiceProvider.overrideWithValue(ExportService(testDb)),
         ],
         child: MaterialApp(
           title: appTitle,
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           builder: (context, child) => RepaintBoundary(
-            key: settingsKey,
+            key: detailKey,
             child: child ?? const SizedBox(),
           ),
-          home: const SettingsScreen(),
+          home: SessionDetailScreen(record: sampleRecord),
         ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Scroll to Data section
-    await tester.drag(find.byType(ListView), const Offset(0, -300));
-    await tester.pumpAndSettle();
+    expect(find.text('SESSION RECORD'), findsOneWidget);
+    expect(find.text('BLOCKS COMPLETED'), findsOneWidget);
+    expect(find.text('9 / 9'), findsOneWidget);
+    expect(find.text('98 min'), findsOneWidget);
+    expect(find.text('Breath support and voice resonance'), findsOneWidget);
 
-    expect(find.text('Export Session History'), findsOneWidget);
+    await captureBoundary(tester, detailKey, 'session_detail_screen.png');
 
-    await captureBoundary(tester, settingsKey, 'settings_export_history_row.png');
-
-    // 2. Native Share Sheet Preview showing exported formatted JSON
+    // 2. Share Sheet Preview showing formatted session record text
     final GlobalKey shareSheetKey = GlobalKey();
-    final jsonOutput = await ExportService.generateJson(testDb);
+    final shareText = '''
+The Instrument — Session Record
+Date: Wednesday, Aug 19 · 9:30 AM
+Blocks: 9/9
+Duration: 98 min
+Intention: Breath support and voice resonance
+Notes: Strong physical grounding throughout. Text work flowed naturally with great breath pacing.
+'''.trim();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -297,14 +289,14 @@ void main() {
           key: shareSheetKey,
           child: child ?? const SizedBox(),
         ),
-        home: AndroidJsonShareSheetModalPreview(jsonText: jsonOutput),
+        home: AndroidSessionRecordShareSheetModalPreview(shareText: shareText),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Export Session History'), findsOneWidget);
+    expect(find.text('Share via'), findsOneWidget);
 
-    await captureBoundary(tester, shareSheetKey, 'settings_export_share_sheet.png');
+    await captureBoundary(tester, shareSheetKey, 'session_detail_share_sheet.png');
   });
 }

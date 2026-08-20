@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'session_detail_screen.dart';
 
 final sessionHistoryProvider = StreamProvider<List<SessionRecord>>((ref) {
   final db = ref.watch(databaseProvider);
@@ -87,114 +88,127 @@ class ProgressScreen extends ConsumerWidget {
               final completedCount = outcomes.where((o) => o == 'completed').length;
               final skippedCount = outcomes.where((o) => o == 'skipped').length;
 
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
+              return Material(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF2A2A2A)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SessionDetailScreen(record: session),
                       ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Color(0xFFD4AF37),
-                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF2A2A2A)),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            formattedDate,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$formattedTime · ${session.blocksCompleted} blocks · ${session.totalMinutes} min',
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 13,
-                            ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Color(0xFFD4AF37),
                           ),
-                          if (session.intention?.isNotEmpty == true) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              '"${session.intention}"',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                formattedDate,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
-                          if (session.notes?.isNotEmpty == true) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              session.notes!,
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 13,
+                              const SizedBox(height: 4),
+                              Text(
+                                '$formattedTime · ${session.blocksCompleted} blocks · ${session.totalMinutes} min',
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 13,
+                                ),
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                          // 9-block completion bar
-                          Row(
-                            children: List.generate(9, (blockIndex) {
-                              final outcome = outcomes[blockIndex];
-                              Color barColor;
-                              switch (outcome) {
-                                case 'completed':
-                                  barColor = const Color(0xFFD4AF37); // Gold
-                                  break;
-                                case 'skipped':
-                                  barColor = const Color(0xFF5C2A2A); // Dark Red
-                                  break;
-                                default:
-                                  barColor = const Color(0xFF2A2A2A); // Dark Grey
-                              }
-
-                              return Expanded(
-                                child: Container(
-                                  height: 4,
-                                  margin: EdgeInsets.only(right: blockIndex < 8 ? 2 : 0),
-                                  decoration: BoxDecoration(
-                                    color: barColor,
-                                    borderRadius: BorderRadius.circular(2),
+                              if (session.intention?.isNotEmpty == true) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  '"${session.intention}"',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
-                              );
-                            }),
+                              ],
+                              if (session.notes?.isNotEmpty == true) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  session.notes!,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 13,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              const SizedBox(height: 10),
+                              // 9-block completion bar
+                              Row(
+                                children: List.generate(9, (blockIndex) {
+                                  final outcome = outcomes[blockIndex];
+                                  Color barColor;
+                                  switch (outcome) {
+                                    case 'completed':
+                                      barColor = const Color(0xFFD4AF37); // Gold
+                                      break;
+                                    case 'skipped':
+                                      barColor = const Color(0xFF5C2A2A); // Dark Red
+                                      break;
+                                    default:
+                                      barColor = const Color(0xFF2A2A2A); // Dark Grey
+                                  }
+
+                                  return Expanded(
+                                    child: Container(
+                                      height: 4,
+                                      margin: EdgeInsets.only(right: blockIndex < 8 ? 2 : 0),
+                                      decoration: BoxDecoration(
+                                        color: barColor,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '9 blocks • $completedCount completed • $skippedCount skipped',
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '9 blocks • $completedCount completed • $skippedCount skipped',
-                            style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
