@@ -742,12 +742,6 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       minutesLogged: drift.Value(totalMinutes),
     ));
 
-    await db.upsertDayProgress(DailyProgressCompanion(
-      date: drift.Value(today),
-      completed: const drift.Value(true),
-      minutesLogged: drift.Value(totalMinutes),
-    ));
-
     final updatedStreak = await db.getCurrentStreak();
     await WidgetService.update(isCompleted: true, streak: updatedStreak, inProgress: false);
 
@@ -807,16 +801,54 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color(0xFF0A0A0A),
           elevation: 0,
-          title: Text(
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text(
             'SESSION',
-            style: AppTextStyles.h1.copyWith(color: AppColors.goldAccent),
+            style: TextStyle(
+              color: Color(0xFFD4AF37),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 2,
+              fontSize: 16,
+            ),
           ),
           leading: IconButton(
             icon: const Icon(Icons.close, color: AppColors.textSecondary),
             onPressed: _showAbandonDialog,
           ),
+          bottom: _sessionIntention != null && _sessionIntention!.isNotEmpty
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(36),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.brightness_5_outlined,
+                          color: Color(0xFFD4AF37),
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _sessionIntention!,
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : null,
         ),
         body: SafeArea(
           child: Stack(
@@ -841,26 +873,6 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       'BLOCK ${_currentIndex + 1} OF ${kRoutineBlocks.length}',
                       style: AppTextStyles.caption,
                     ),
-                    if (_sessionIntention?.isNotEmpty == true) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardSurface,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        child: Text(
-                          '"$_sessionIntention"',
-                          style: const TextStyle(
-                            color: AppColors.goldAccent,
-                            fontSize: 13,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 24),
                     Container(
                       width: 72,

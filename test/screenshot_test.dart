@@ -12,6 +12,7 @@ import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/providers/progress_providers.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/widgets/skip_reason_bottom_sheet.dart';
@@ -74,6 +75,40 @@ void main() {
 
   tearDown(() async {
     await testDb.close();
+  });
+
+  testWidgets('SessionScreen shows intention in AppBar', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const SessionScreen(initialIntention: 'To stay present under pressure'),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('To stay present under pressure'), findsWidgets);
+    expect(find.byIcon(Icons.brightness_5_outlined), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'session_intention_display.png');
   });
 
   testWidgets('WeeklyReportCard renders with data', (WidgetTester tester) async {
