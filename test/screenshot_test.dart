@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:drift/native.dart';
@@ -11,9 +10,10 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_detail_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
+import 'package:the_instrument/services/session_state_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
+import 'package:the_instrument/widgets/intention_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -75,26 +75,19 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('SessionDetailScreen block breakdown', (WidgetTester tester) async {
+  testWidgets('SessionStateService saves and gets intention', (WidgetTester tester) async {
+    final service = SessionStateService();
+    await service.setIntention('Emotional authenticity');
+    expect(service.currentState?.intention, 'Emotional authenticity');
+  });
+
+  testWidgets('IntentionBottomSheet renders correctly', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final record = SessionRecord(
-      id: 1,
-      completedAt: DateTime(2026, 8, 20, 10, 30),
-      blocksCompleted: 7,
-      totalMinutes: 98,
-      intention: 'To find emotional truth in the scene',
-      notes: 'Strong connection in Block 5. Skipped Block 3 and 7 due to time constraints.',
-      blocksJson: jsonEncode([
-        'completed', 'completed', 'skipped', 'completed',
-        'completed', 'completed', 'skipped', 'completed', 'completed'
-      ]),
-    );
-
-    final GlobalKey detailKey = GlobalKey();
+    final GlobalKey rootKey = GlobalKey();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -106,29 +99,42 @@ void main() {
           debugShowCheckedModeBanner: false,
           theme: appTheme,
           builder: (context, child) => RepaintBoundary(
-            key: detailKey,
+            key: rootKey,
             child: child ?? const SizedBox(),
           ),
-          home: SessionDetailScreen(record: record),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModalBottomSheet<String?>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const IntentionBottomSheet(),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
+
+    await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Session Record'), findsOneWidget);
-    expect(find.text('BLOCK BREAKDOWN'), findsOneWidget);
-    expect(find.text('7 / 9'), findsOneWidget);
-    expect(find.text('98 min'), findsOneWidget);
-    expect(find.text('Breath Lab'), findsOneWidget);
-    expect(find.text('Physical Warm-up'), findsOneWidget);
-    expect(find.text('Memory Foundation'), findsOneWidget);
-    expect(find.text('Voice & Resonance'), findsOneWidget);
-    expect(find.text('Emotional Preparation'), findsOneWidget);
-    expect(find.text('Continuity of Thought'), findsOneWidget);
-    expect(find.text('Character Embodiment'), findsOneWidget);
-    expect(find.text('Cold Reading / Text Work'), findsOneWidget);
-    expect(find.text('Integration & Cool-down'), findsOneWidget);
+    expect(find.byType(IntentionBottomSheet), findsOneWidget);
+    expect(find.text('Set Your Intention'), findsOneWidget);
+    expect(find.text('START SESSION'), findsOneWidget);
+    expect(find.text('SKIP'), findsOneWidget);
 
-    await captureBoundary(tester, detailKey, 'session_detail_block_breakdown.png');
+    await tester.enterText(
+      find.byType(TextField),
+      'To find emotional truth and stay grounded in the scene.',
+    );
+    await tester.pumpAndSettle();
+
+    await captureBoundary(tester, rootKey, 'intention_bottom_sheet.png');
   });
 }

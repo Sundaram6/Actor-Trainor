@@ -18,7 +18,8 @@ import '../services/widget_service.dart';
 
 class SessionScreen extends ConsumerStatefulWidget {
   final int startBlockIndex;
-  const SessionScreen({super.key, this.startBlockIndex = 0});
+  final String? initialIntention;
+  const SessionScreen({super.key, this.startBlockIndex = 0, this.initialIntention});
 
   @override
   ConsumerState<SessionScreen> createState() => _SessionScreenState();
@@ -46,6 +47,10 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     unawaited(WakelockPlus.enable().catchError((_) {}));
     _currentIndex = widget.startBlockIndex;
     _blockOutcomes = List.filled(kRoutineBlocks.length, 'pending');
+    if (widget.initialIntention != null && widget.initialIntention!.isNotEmpty) {
+      _sessionIntention = widget.initialIntention;
+      ref.read(sessionStateServiceProvider).setIntention(widget.initialIntention);
+    }
     final block = kRoutineBlocks[_currentIndex];
     if (block.subSteps != null) {
       _subStepIndex = 0;
@@ -177,7 +182,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
           ),
         ),
       );
-    } else if (mounted) {
+    } else if (mounted && widget.initialIntention == null && _sessionIntention == null) {
       _showIntentionDialog();
     }
   }

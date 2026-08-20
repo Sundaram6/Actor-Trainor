@@ -1,5 +1,42 @@
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final sessionStateServiceProvider = Provider<SessionStateService>((ref) {
+  return SessionStateService();
+});
+
+class SessionState {
+  final int currentBlockIndex;
+  final int currentSubStepIndex;
+  final int elapsedSeconds;
+  final DateTime? startedAt;
+  final String? intention;
+
+  SessionState({
+    required this.currentBlockIndex,
+    required this.currentSubStepIndex,
+    required this.elapsedSeconds,
+    this.startedAt,
+    this.intention,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'currentBlockIndex': currentBlockIndex,
+    'currentSubStepIndex': currentSubStepIndex,
+    'elapsedSeconds': elapsedSeconds,
+    'startedAt': startedAt?.toIso8601String(),
+    'intention': intention,
+  };
+
+  factory SessionState.fromJson(Map<String, dynamic> json) => SessionState(
+    currentBlockIndex: json['currentBlockIndex'] as int? ?? 0,
+    currentSubStepIndex: json['currentSubStepIndex'] as int? ?? 0,
+    elapsedSeconds: json['elapsedSeconds'] as int? ?? 0,
+    startedAt: json['startedAt'] != null ? DateTime.tryParse(json['startedAt'] as String) : null,
+    intention: json['intention'] as String?,
+  );
+}
 
 class SessionStateService {
   static const String _keyActive = 'session_active';
@@ -12,6 +49,27 @@ class SessionStateService {
   static const String _keyBlockDurationSeconds = 'session_block_duration_seconds';
   static const String _keyBlockOutcomes = 'session_block_outcomes';
   static const String _keyIntention = 'session_intention';
+
+  SessionState? _inMemoryState;
+
+  SessionState? get currentState => _inMemoryState;
+
+  Future<void> setIntention(String? intention) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (intention != null && intention.isNotEmpty) {
+      await prefs.setString(_keyIntention, intention);
+    } else {
+      await prefs.remove(_keyIntention);
+    }
+
+    _inMemoryState = SessionState(
+      currentBlockIndex: _inMemoryState?.currentBlockIndex ?? 0,
+      currentSubStepIndex: _inMemoryState?.currentSubStepIndex ?? 0,
+      elapsedSeconds: _inMemoryState?.elapsedSeconds ?? 0,
+      startedAt: _inMemoryState?.startedAt,
+      intention: intention,
+    );
+  }
 
   Future<void> saveState({
     required int blockIndex,
@@ -42,6 +100,14 @@ class SessionStateService {
     if (intention != null) {
       await prefs.setString(_keyIntention, intention);
     }
+
+    _inMemoryState = SessionState(
+      currentBlockIndex: blockIndex,
+      currentSubStepIndex: stepIndex,
+      elapsedSeconds: remainingSeconds,
+      startedAt: startedAt,
+      intention: intention,
+    );
   }
 
   Future<SessionSnapshot?> loadState() async {
@@ -68,6 +134,18 @@ class SessionStateService {
       } catch (_) {}
     }
 
+    final intention = prefs.getString(_keyIntention);
+
+    _inMemoryState = SessionState(
+      currentBlockIndex: prefs.getInt(_keyBlockIndex) ?? 0,
+      currentSubStepIndex: prefs.getInt(_keyStepIndex) ?? 0,
+      elapsedSeconds: prefs.getInt(_keyRemainingSeconds) ?? 0,
+      startedAt: blockStartedAtMillis != null
+          ? DateTime.fromMillisecondsSinceEpoch(blockStartedAtMillis)
+          : null,
+      intention: intention,
+    );
+
     return SessionSnapshot(
       blockIndex: prefs.getInt(_keyBlockIndex) ?? 0,
       stepIndex: prefs.getInt(_keyStepIndex) ?? 0,
@@ -78,11 +156,12 @@ class SessionStateService {
           : null,
       blockDurationSeconds: prefs.getInt(_keyBlockDurationSeconds),
       blockOutcomes: blockOutcomes,
-      intention: prefs.getString(_keyIntention),
+      intention: intention,
     );
   }
 
   Future<void> clearState() async {
+    _inMemoryState = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyActive);
     await prefs.remove(_keyBlockIndex);

@@ -4,6 +4,7 @@ import '../core/constants.dart';
 import '../providers/evening_load_provider.dart';
 import '../providers/today_provider.dart';
 import '../services/widget_service.dart';
+import '../widgets/intention_bottom_sheet.dart';
 import 'evening_load_screen.dart';
 import 'session_screen.dart';
 
@@ -238,11 +239,20 @@ class TodayScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
+                      final intention = await showModalBottomSheet<String?>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const IntentionBottomSheet(),
+                      );
+
+                      if (!context.mounted) return;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SessionScreen(),
+                          builder: (_) => SessionScreen(initialIntention: intention),
                         ),
                       );
                     },
