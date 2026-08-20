@@ -18,6 +18,7 @@ import 'package:the_instrument/screens/onboarding_screen.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
 import 'package:the_instrument/screens/session_screen.dart';
+import 'package:the_instrument/screens/today_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/widgets/skip_reason_bottom_sheet.dart';
@@ -472,5 +473,39 @@ void main() {
     expect(find.text('Strong'), findsOneWidget);
 
     await captureBoundary(tester, rootKey, 'session_completion_rating.png');
+  });
+
+  testWidgets('TodayScreen weekly goals render', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const TodayScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('THIS WEEK'), findsOneWidget);
+    expect(find.text('Sessions'), findsOneWidget);
+    expect(find.text('Minutes'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'today_weekly_goals.png');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
 }

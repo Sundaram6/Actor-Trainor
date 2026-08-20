@@ -99,6 +99,12 @@ const String startRoutineButton = 'START ROUTINE';
 const String eveningLoadNotSet = 'Evening Load: Not Set';
 const String eveningLoadSubtitle = "Tap to prepare tomorrow's lines";
 
+// --- Weekly Goal Keys & Defaults ---
+const String kWeeklySessionGoal = 'weekly_session_goal';
+const String kWeeklyMinuteGoal = 'weekly_minute_goal';
+const int kDefaultWeeklySessionGoal = 4;
+const int kDefaultWeeklyMinuteGoal = 224; // 2 full routines
+
 class SubStep {
   final String title;
   final String instruction;

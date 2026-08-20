@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
 import '../providers/evening_load_provider.dart';
 import '../providers/today_provider.dart';
+import '../providers/weekly_goals_provider.dart';
 import '../services/widget_service.dart';
 import '../widgets/intention_bottom_sheet.dart';
 import 'checkin_screen.dart';
@@ -27,6 +28,11 @@ class TodayScreen extends ConsumerWidget {
     final statsAsync = ref.watch(dashboardStatsProvider);
     final statusAsync = ref.watch(todayStatusProvider);
     final mostSkippedAsync = ref.watch(mostSkippedBlockProvider);
+    final sessionGoal = ref.watch(weeklySessionGoalProvider);
+    final minuteGoal = ref.watch(weeklyMinuteGoalProvider);
+    final weeklyGoalsAsync = ref.watch(weeklyGoalsProgressProvider);
+
+    const gold = Color(0xFFD4AF37);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -64,34 +70,116 @@ class TodayScreen extends ConsumerWidget {
                             ? const Color(0xFFD4AF37)
                             : Colors.white,
                       ),
-                      const SizedBox(width: 8),
-                      _DashboardStatCard(
-                        label: 'This Week',
-                        value: '${stats.thisWeekCount}',
-                        valueColor: stats.thisWeekCount > 0
-                            ? const Color(0xFFD4AF37)
-                            : Colors.white,
-                      ),
                     ],
                   ),
-                  loading: () => Row(
-                    children: const [
+                  loading: () => const Row(
+                    children: [
                       _DashboardStatCard(label: 'Today', value: 'Not started'),
                       SizedBox(width: 8),
                       _DashboardStatCard(label: 'Streak', value: '0'),
-                      SizedBox(width: 8),
-                      _DashboardStatCard(label: 'This Week', value: '0'),
                     ],
                   ),
-                  error: (error, stack) => Row(
-                    children: const [
+                  error: (error, stack) => const Row(
+                    children: [
                       _DashboardStatCard(label: 'Today', value: 'Not started'),
                       SizedBox(width: 8),
                       _DashboardStatCard(label: 'Streak', value: '0'),
-                      SizedBox(width: 8),
-                      _DashboardStatCard(label: 'This Week', value: '0'),
                     ],
                   ),
+                ),
+                const SizedBox(height: 12),
+                weeklyGoalsAsync.when(
+                  data: (progress) => Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'THIS WEEK',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _GoalRing(
+                                label: 'Sessions',
+                                current: progress.sessionsDone,
+                                target: sessionGoal,
+                                color: gold,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _GoalRing(
+                                label: 'Minutes',
+                                current: progress.minutesDone,
+                                target: minuteGoal,
+                                color: gold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  loading: () => Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'THIS WEEK',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _GoalRing(
+                                label: 'Sessions',
+                                current: 0,
+                                target: sessionGoal,
+                                color: gold,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _GoalRing(
+                                label: 'Minutes',
+                                current: 0,
+                                target: minuteGoal,
+                                color: gold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
                 mostSkippedAsync.when(
                   data: (data) {
@@ -394,6 +482,78 @@ class TodayScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GoalRing extends StatelessWidget {
+  final String label;
+  final int current;
+  final int target;
+  final Color color;
+
+  const _GoalRing({
+    required this.label,
+    required this.current,
+    required this.target,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: 80,
+          height: 80,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 6,
+                  backgroundColor: Colors.white10,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$current',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '/$target',
+                    style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

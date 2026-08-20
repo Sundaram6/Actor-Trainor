@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/today_provider.dart';
+import '../providers/weekly_goals_provider.dart';
 import '../services/export_service.dart';
 import '../services/import_service.dart';
 import '../services/notification_service.dart';
@@ -110,6 +111,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final voiceOn = ref.watch(voiceInstructionsEnabledProvider);
     final notifOn = ref.watch(notificationEnabledProvider);
     final notifTime = ref.watch(notificationTimeProvider);
+    final sessionGoal = ref.watch(weeklySessionGoalProvider);
+    final minuteGoal = ref.watch(weeklyMinuteGoalProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
@@ -164,6 +167,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: _saveVoiceInstructions,
               activeThumbColor: const Color(0xFFD4AF37),
               activeTrackColor: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const _SectionTitle('Practice Goals'),
+          _SettingsTile(
+            icon: Icons.format_list_numbered_outlined,
+            label: 'Weekly Sessions',
+            subtitle: '$sessionGoal sessions / week',
+            trailing: Text('$sessionGoal / week', style: const TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.w600)),
+            onTap: () => _showGoalPicker(
+              context: context,
+              title: 'Sessions per week',
+              min: 1,
+              max: 14,
+              current: sessionGoal,
+              onSelected: (v) => ref.read(weeklySessionGoalProvider.notifier).setGoal(v),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.timer_outlined,
+            label: 'Weekly Minutes',
+            subtitle: '$minuteGoal min / week',
+            trailing: Text('$minuteGoal min', style: const TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.w600)),
+            onTap: () => _showGoalPicker(
+              context: context,
+              title: 'Minutes per week',
+              min: 30,
+              max: 900,
+              current: minuteGoal,
+              step: 15,
+              onSelected: (v) => ref.read(weeklyMinuteGoalProvider.notifier).setGoal(v),
             ),
           ),
           const SizedBox(height: 24),
@@ -341,6 +376,81 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final m = t.minute.toString().padLeft(2, '0');
     final ampm = t.period == DayPeriod.am ? 'AM' : 'PM';
     return '$h:$m $ampm';
+  }
+
+  void _showGoalPicker({
+    required BuildContext context,
+    required String title,
+    required int min,
+    required int max,
+    required int current,
+    required ValueChanged<int> onSelected,
+    int step = 1,
+  }) {
+    const gold = Color(0xFFD4AF37);
+    final items = <int>[];
+    for (int i = min; i <= max; i += step) {
+      items.add(i);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: gold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (c, index) {
+                      final val = items[index];
+                      final isSelected = val == current;
+                      return InkWell(
+                        onTap: () {
+                          onSelected(val);
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          alignment: Alignment.center,
+                          color: isSelected ? gold.withValues(alpha: 0.1) : Colors.transparent,
+                          child: Text(
+                            '$val',
+                            style: TextStyle(
+                              color: isSelected ? gold : Colors.white70,
+                              fontSize: 18,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showResetDialog(BuildContext context) {
