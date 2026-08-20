@@ -11,7 +11,7 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
-import 'package:the_instrument/screens/session_detail_screen.dart';
+import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,21 +75,21 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('SessionDetailScreen notes edit mode', (WidgetTester tester) async {
+  testWidgets('SessionScreen resume dialog shows block context', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final record = SessionRecord(
-      id: 1,
-      completedAt: DateTime(2026, 8, 20, 10, 30),
-      blocksCompleted: 9,
-      totalMinutes: 98,
-      intention: 'To find emotional truth',
-      notes: 'Strong connection in Block 5',
-      blocksJson: jsonEncode(List.generate(9, (_) => 'completed')),
-    );
+    // Pre-seed a saved session state with intention
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('session_state', jsonEncode({
+      'currentBlockIndex': 4,
+      'currentSubStepIndex': 1,
+      'elapsedSeconds': 3600,
+      'startedAt': DateTime(2026, 8, 20, 14, 30).toIso8601String(),
+      'intention': 'To stay present under pressure',
+    }));
 
     final GlobalKey rootKey = GlobalKey();
 
@@ -106,22 +106,18 @@ void main() {
             key: rootKey,
             child: child ?? const SizedBox(),
           ),
-          home: SessionDetailScreen(record: record),
+          home: const SessionScreen(),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Resume Session?'), findsOneWidget);
+    expect(find.text('START FRESH'), findsOneWidget);
+    expect(find.text('RESUME'), findsOneWidget);
 
-    // Tap edit icon to enter edit mode
-    await tester.tap(find.byIcon(Icons.edit_outlined));
-    await tester.pumpAndSettle();
-
-    expect(find.text('SAVE'), findsOneWidget);
-    expect(find.text('CANCEL'), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
-
-    await captureBoundary(tester, rootKey, 'session_detail_notes_edit.png');
+    await captureBoundary(tester, rootKey, 'session_resume_dialog.png');
   });
 }

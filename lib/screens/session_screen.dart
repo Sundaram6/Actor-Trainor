@@ -91,100 +91,113 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
 
   Future<void> _checkResumeState() async {
     if (widget.startBlockIndex > 0) return;
-    final saved = await SessionStateService().loadState();
-    if (saved != null && mounted) {
-      final blockName = saved.blockIndex < kRoutineBlocks.length
-          ? kRoutineBlocks[saved.blockIndex].name
-          : 'Block ${saved.blockIndex + 1}';
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => RepaintBoundary(
-          child: AlertDialog(
-            backgroundColor: const Color(0xFF1A1A1A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFF2A2A2A)),
-            ),
-            title: const Text(
-              'Resume Session?',
-              style: TextStyle(
-                color: Color(0xFFD4AF37),
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-            ),
-            content: Text(
-              'You have an unfinished session in $blockName. Resume where you left off?',
-              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  await SessionStateService().clearState();
-                  if (mounted) {
-                    Navigator.pop(context);
-                    _showIntentionDialog();
-                  }
-                },
-                child: const Text('START FRESH', style: TextStyle(color: Colors.white54)),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = saved.blockIndex;
-                    _subStepIndex = saved.stepIndex;
-                    _sessionIntention = saved.intention;
-                    if (saved.blockOutcomes != null) {
-                      _blockOutcomes = List<String>.from(saved.blockOutcomes!);
-                    }
-                    final block = kRoutineBlocks[_currentIndex];
-                    _blockDurationSeconds = saved.blockDurationSeconds ??
-                        (block.subSteps != null
-                            ? block.subSteps![_subStepIndex].durationSeconds
-                            : block.durationMinutes * 60);
+    final service = ref.read(sessionStateServiceProvider);
+    final saved = await service.loadState();
 
-                    if (saved.isPaused) {
-                      _secondsRemaining = saved.remainingSeconds;
-                      _blockStartedAt = clock.now().subtract(
-                        Duration(seconds: _blockDurationSeconds - _secondsRemaining),
-                      );
-                      _isPaused = true;
-                      _isRunning = false;
-                    } else if (saved.startedAt != null) {
-                      final elapsed = clock.now().difference(saved.startedAt!).inSeconds;
-                      final remaining = _blockDurationSeconds - elapsed;
-                      if (remaining > 0) {
-                        _secondsRemaining = remaining.clamp(0, _blockDurationSeconds);
-                        _blockStartedAt = saved.startedAt;
-                        _isPaused = false;
-                        _startTimer();
-                      } else {
-                        _secondsRemaining = 0;
-                        _advanceBlockOrStep();
-                      }
-                    } else {
-                      _secondsRemaining = saved.remainingSeconds;
-                      _blockStartedAt = clock.now().subtract(
-                        Duration(seconds: _blockDurationSeconds - _secondsRemaining),
-                      );
-                      _isPaused = false;
-                    }
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  'RESUME',
-                  style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (mounted && widget.initialIntention == null && _sessionIntention == null) {
-      _showIntentionDialog();
+    if (saved == null) {
+      if (widget.initialIntention == null && _sessionIntention == null) {
+        _showIntentionDialog();
+      }
+      return;
     }
+
+    if (saved.startedAt != null &&
+        DateTime.now().difference(saved.startedAt!).inHours > 4) {
+      await service.clearState();
+      if (widget.initialIntention == null && _sessionIntention == null) {
+        _showIntentionDialog();
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final resume = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => RepaintBoundary(
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Resume Session?',
+            style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'You have a session in progress from ${_formatTime(saved.startedAt)}.\n\nBlock: ${saved.currentBlockIndex + 1} of 9',
+            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('START FRESH', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('RESUME', style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (resume == true) {
+      if (saved.intention != null && saved.intention!.isNotEmpty) {
+        _sessionIntention = saved.intention;
+      }
+      if (saved.blockOutcomes != null) {
+        _blockOutcomes = List<String>.from(saved.blockOutcomes!);
+      }
+
+      setState(() {
+        _currentIndex = saved.currentBlockIndex;
+        _subStepIndex = saved.currentSubStepIndex;
+        final block = kRoutineBlocks[_currentIndex];
+        _blockDurationSeconds = saved.blockDurationSeconds ??
+            (block.subSteps != null
+                ? block.subSteps![_subStepIndex].durationSeconds
+                : block.durationMinutes * 60);
+
+        if (saved.isPaused) {
+          _secondsRemaining = saved.remainingSeconds;
+          _blockStartedAt = clock.now().subtract(
+            Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+          );
+          _isPaused = true;
+          _isRunning = false;
+        } else if (saved.startedAt != null) {
+          final elapsed = clock.now().difference(saved.startedAt!).inSeconds;
+          final remaining = _blockDurationSeconds - elapsed;
+          if (remaining > 0) {
+            _secondsRemaining = remaining.clamp(0, _blockDurationSeconds);
+            _blockStartedAt = saved.startedAt;
+            _isPaused = false;
+            _startTimer();
+          } else {
+            _secondsRemaining = 0;
+            _advanceBlockOrStep();
+          }
+        } else {
+          _secondsRemaining = saved.remainingSeconds;
+          _blockStartedAt = clock.now().subtract(
+            Duration(seconds: _blockDurationSeconds - _secondsRemaining),
+          );
+          _isPaused = false;
+        }
+      });
+    } else {
+      await service.clearState();
+      if (mounted && widget.initialIntention == null && _sessionIntention == null) {
+        _showIntentionDialog();
+      }
+    }
+  }
+
+  String _formatTime(DateTime? dt) {
+    if (dt == null) return 'earlier';
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   void _showIntentionDialog() {

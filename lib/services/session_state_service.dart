@@ -49,6 +49,7 @@ class SessionStateService {
   static const String _keyBlockDurationSeconds = 'session_block_duration_seconds';
   static const String _keyBlockOutcomes = 'session_block_outcomes';
   static const String _keyIntention = 'session_intention';
+  static const String _keySessionStateJson = 'session_state';
 
   SessionState? _inMemoryState;
 
@@ -101,6 +102,15 @@ class SessionStateService {
       await prefs.setString(_keyIntention, intention);
     }
 
+    final stateObj = {
+      'currentBlockIndex': blockIndex,
+      'currentSubStepIndex': stepIndex,
+      'elapsedSeconds': remainingSeconds,
+      'startedAt': startedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'intention': intention,
+    };
+    await prefs.setString(_keySessionStateJson, jsonEncode(stateObj));
+
     _inMemoryState = SessionState(
       currentBlockIndex: blockIndex,
       currentSubStepIndex: stepIndex,
@@ -112,6 +122,39 @@ class SessionStateService {
 
   Future<SessionSnapshot?> loadState() async {
     final prefs = await SharedPreferences.getInstance();
+
+    final sessionStateJson = prefs.getString(_keySessionStateJson);
+    if (sessionStateJson != null) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(sessionStateJson);
+        final started = data['startedAt'] != null ? DateTime.tryParse(data['startedAt']) : null;
+        if (started != null && DateTime.now().difference(started).inHours > 4) {
+          await clearState();
+          return null;
+        }
+        final intention = data['intention'] as String?;
+        final bIndex = data['currentBlockIndex'] as int? ?? data['blockIndex'] as int? ?? 0;
+        final sIndex = data['currentSubStepIndex'] as int? ?? data['stepIndex'] as int? ?? 0;
+        final secs = data['elapsedSeconds'] as int? ?? data['remainingSeconds'] as int? ?? 0;
+
+        _inMemoryState = SessionState(
+          currentBlockIndex: bIndex,
+          currentSubStepIndex: sIndex,
+          elapsedSeconds: secs,
+          startedAt: started,
+          intention: intention,
+        );
+
+        return SessionSnapshot(
+          blockIndex: bIndex,
+          stepIndex: sIndex,
+          remainingSeconds: secs,
+          startedAt: started,
+          intention: intention,
+        );
+      } catch (_) {}
+    }
+
     final active = prefs.getBool(_keyActive) ?? false;
     if (!active) return null;
 
@@ -163,6 +206,7 @@ class SessionStateService {
   Future<void> clearState() async {
     _inMemoryState = null;
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keySessionStateJson);
     await prefs.remove(_keyActive);
     await prefs.remove(_keyBlockIndex);
     await prefs.remove(_keyStepIndex);
@@ -185,6 +229,10 @@ class SessionSnapshot {
   final int? blockDurationSeconds;
   final List<String>? blockOutcomes;
   final String? intention;
+
+  int get currentBlockIndex => blockIndex;
+  int get currentSubStepIndex => stepIndex;
+  int get elapsedSeconds => remainingSeconds;
 
   SessionSnapshot({
     required this.blockIndex,
