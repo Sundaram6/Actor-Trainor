@@ -5,9 +5,9 @@ import '../providers/evening_load_provider.dart';
 import '../providers/today_provider.dart';
 import '../services/widget_service.dart';
 import '../widgets/intention_bottom_sheet.dart';
+import 'checkin_screen.dart';
 import 'evening_load_screen.dart';
 import 'journal_screen.dart';
-import 'session_screen.dart';
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -253,7 +253,7 @@ class TodayScreen extends ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => SessionScreen(initialIntention: intention),
+                          builder: (_) => CheckInScreen(intention: intention ?? ''),
                         ),
                       );
                     },

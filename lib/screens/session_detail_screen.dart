@@ -7,6 +7,7 @@ import '../core/constants.dart' show allBlocks;
 import '../database/database.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
+import '../providers/session_checkin_provider.dart';
 import '../providers/session_notes_provider.dart';
 import '../providers/today_provider.dart';
 import '../screens/progress_screen.dart' show sessionHistoryProvider;
@@ -210,6 +211,36 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     return const Text(
                       'No journal entry for this session.',
                       style: TextStyle(color: Colors.white24, fontSize: 14, fontStyle: FontStyle.italic),
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, s) => const SizedBox.shrink(),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            const _SectionTitle(title: 'STATE CHECK-IN'),
+            const SizedBox(height: 12),
+            Consumer(
+              builder: (context, ref, child) {
+                final checkInAsync = ref.watch(sessionCheckInProvider(widget.record.id));
+                return checkInAsync.when(
+                  data: (checkIn) {
+                    if (checkIn == null) {
+                      return const Text(
+                        'No check-in recorded.',
+                        style: TextStyle(color: Colors.white24, fontSize: 14, fontStyle: FontStyle.italic),
+                      );
+                    }
+                    return Row(
+                      children: [
+                        _CheckInChip(label: 'Energy', value: checkIn.energyLevel),
+                        const SizedBox(width: 12),
+                        _CheckInChip(label: 'Focus', value: checkIn.focusLevel),
+                        const SizedBox(width: 12),
+                        _CheckInChip(label: 'Body', value: checkIn.physicalReadiness),
+                      ],
                     );
                   },
                   loading: () => const SizedBox.shrink(),
@@ -428,3 +459,28 @@ class _BlockRow extends StatelessWidget {
     );
   }
 }
+
+class _CheckInChip extends StatelessWidget {
+  final String label;
+  final int value;
+
+  const _CheckInChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFD4AF37);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: gold.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+

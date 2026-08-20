@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../core/constants.dart';
 import '../providers/database_provider.dart';
+import '../providers/session_checkin_provider.dart';
 import '../database/database.dart';
 import '../services/sound_service.dart';
 import '../services/tts_service.dart';
@@ -21,7 +22,18 @@ import '../services/widget_service.dart';
 class SessionScreen extends ConsumerStatefulWidget {
   final int startBlockIndex;
   final String? initialIntention;
-  const SessionScreen({super.key, this.startBlockIndex = 0, this.initialIntention});
+  final int? initialEnergy;
+  final int? initialFocus;
+  final int? initialPhysical;
+
+  const SessionScreen({
+    super.key,
+    this.startBlockIndex = 0,
+    this.initialIntention,
+    this.initialEnergy,
+    this.initialFocus,
+    this.initialPhysical,
+  });
 
   @override
   ConsumerState<SessionScreen> createState() => _SessionScreenState();
@@ -434,13 +446,24 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                         .where((e) => _blockOutcomes[e.key] == 'completed')
                         .fold<int>(0, (sum, e) => sum + e.value.durationMinutes);
 
-                    await db.insertSessionRecord(SessionRecordsCompanion(
+                    final insertedId = await db.insertSessionRecord(SessionRecordsCompanion(
                       completedAt: drift.Value(now),
                       blocksCompleted: drift.Value(completedBlocks),
                       totalMinutes: drift.Value(loggedMins),
                       blocksJson: drift.Value(jsonEncode(blocksData)),
                       intention: drift.Value(_sessionIntention),
                     ));
+
+                    if (widget.initialEnergy != null &&
+                        widget.initialFocus != null &&
+                        widget.initialPhysical != null) {
+                      await ref.read(saveSessionCheckInProvider)(
+                        insertedId,
+                        widget.initialEnergy!,
+                        widget.initialFocus!,
+                        widget.initialPhysical!,
+                      );
+                    }
                   }
 
                   if (dialogContext.mounted) {
@@ -735,6 +758,17 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       intention: drift.Value(_sessionIntention),
       notes: drift.Value(notes),
     ));
+
+    if (widget.initialEnergy != null &&
+        widget.initialFocus != null &&
+        widget.initialPhysical != null) {
+      await ref.read(saveSessionCheckInProvider)(
+        insertedId,
+        widget.initialEnergy!,
+        widget.initialFocus!,
+        widget.initialPhysical!,
+      );
+    }
 
     await db.upsertDayProgress(DailyProgressCompanion(
       date: drift.Value(today),

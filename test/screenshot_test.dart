@@ -12,6 +12,7 @@ import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/providers/progress_providers.dart';
+import 'package:the_instrument/screens/checkin_screen.dart';
 import 'package:the_instrument/screens/journal_screen.dart';
 import 'package:the_instrument/screens/onboarding_screen.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
@@ -391,5 +392,41 @@ void main() {
     expect(find.textContaining('Felt deep connection'), findsOneWidget);
 
     await captureBoundary(tester, rootKey, 'journal_screen.png');
+  });
+
+  testWidgets('CheckInScreen renders 3 sliders', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const CheckInScreen(intention: 'To stay open and grounded'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('STATE OF THE ACTOR'), findsOneWidget);
+    expect(find.text('BEGIN SESSION'), findsOneWidget);
+    expect(find.text('Energy'), findsOneWidget);
+    expect(find.text('Focus'), findsOneWidget);
+    expect(find.text('Body'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'checkin_screen.png');
   });
 }

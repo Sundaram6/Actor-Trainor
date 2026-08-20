@@ -45,13 +45,22 @@ class SessionNotes extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads, SessionNotes])
+class SessionCheckIns extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sessionId => integer().references(SessionRecords, #id)();
+  IntColumn get energyLevel => integer()(); // 1–5
+  IntColumn get focusLevel => integer()(); // 1–5
+  IntColumn get physicalReadiness => integer()(); // 1–5
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads, SessionNotes, SessionCheckIns])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -76,6 +85,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.createTable(sessionNotes);
+          }
+          if (from < 7) {
+            await m.createTable(sessionCheckIns);
           }
         },
       );
