@@ -77,6 +77,53 @@ void main() {
     await testDb.close();
   });
 
+  testWidgets('StreakCalendar renders with active days', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+    final now = DateTime.now();
+    final activeDays = {
+      DateTime(now.year, now.month, now.day).subtract(const Duration(days: 2)),
+      DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1)),
+      DateTime(now.year, now.month, now.day),
+    };
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: Scaffold(
+            backgroundColor: const Color(0xFF0A0A0A),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: StreakCalendar(activeDays: activeDays),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StreakCalendar), findsOneWidget);
+    expect(find.text('LAST 30 DAYS'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'streak_calendar.png');
+  });
+
   testWidgets('SessionScreen shows intention in AppBar', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;

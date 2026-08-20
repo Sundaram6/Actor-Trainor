@@ -116,3 +116,17 @@ class WeeklyReport {
         completionRate: 0.0,
       );
 }
+
+final streakCalendarProvider = FutureProvider<Set<DateTime>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+
+  final records = await (db.select(db.sessionRecords)
+        ..where((t) => t.completedAt.isBiggerOrEqualValue(thirtyDaysAgo)))
+      .get();
+
+  return records
+      .map((r) => DateTime(r.completedAt.year, r.completedAt.month, r.completedAt.day))
+      .toSet();
+});
+

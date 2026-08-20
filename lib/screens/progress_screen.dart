@@ -63,15 +63,31 @@ class ProgressScreen extends ConsumerWidget {
             separatorBuilder: (context, index) => SizedBox(height: index == 0 ? 16 : 12),
             itemBuilder: (context, index) {
               if (index == 0) {
-                return Consumer(
-                  builder: (context, ref, child) {
-                    final weeklyAsync = ref.watch(weeklyReportProvider);
-                    return weeklyAsync.when(
-                      data: (report) => _WeeklyReportCard(report: report),
-                      loading: () => const SizedBox.shrink(),
-                      error: (err, stack) => const SizedBox.shrink(),
-                    );
-                  },
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final calendarAsync = ref.watch(streakCalendarProvider);
+                        return calendarAsync.when(
+                          data: (activeDays) => _StreakCalendar(activeDays: activeDays),
+                          loading: () => const SizedBox.shrink(),
+                          error: (err, stack) => const SizedBox.shrink(),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final weeklyAsync = ref.watch(weeklyReportProvider);
+                        return weeklyAsync.when(
+                          data: (report) => _WeeklyReportCard(report: report),
+                          loading: () => const SizedBox.shrink(),
+                          error: (err, stack) => const SizedBox.shrink(),
+                        );
+                      },
+                    ),
+                  ],
                 );
               }
 
@@ -330,3 +346,68 @@ class MiniStat extends StatelessWidget {
     );
   }
 }
+
+typedef _StreakCalendar = StreakCalendar;
+
+class StreakCalendar extends StatelessWidget {
+  final Set<DateTime> activeDays;
+  const StreakCalendar({super.key, required this.activeDays});
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFD4AF37);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Last 30 days, ending with today
+    final days = List.generate(30, (i) => today.subtract(Duration(days: 29 - i)));
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'LAST 30 DAYS',
+            style: TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 7,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1,
+            children: days.map((day) {
+              final isActive = activeDays.contains(day);
+              final isToday = day == today;
+              return Container(
+                decoration: BoxDecoration(
+                  color: isActive ? gold.withValues(alpha: 0.15) : const Color(0xFF0A0A0A),
+                  shape: BoxShape.circle,
+                  border: isToday ? Border.all(color: gold, width: 1.5) : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: TextStyle(
+                    color: isActive ? gold : Colors.white38,
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
