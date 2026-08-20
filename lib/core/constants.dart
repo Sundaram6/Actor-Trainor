@@ -114,6 +114,7 @@ class SubStep {
 class BlockConfig {
   final String id;
   final String name;
+  String get title => name;
   final int durationMinutes;
   final String tag;
   final String description;
