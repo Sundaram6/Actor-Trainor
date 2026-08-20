@@ -38,13 +38,20 @@ class EveningLoads extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 }
 
-@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads])
+class SessionNotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sessionId => integer().references(SessionRecords, #id)();
+  TextColumn get note => text()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DriftDatabase(tables: [Sessions, SessionRecords, DailyProgress, EveningLoads, SessionNotes])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +73,9 @@ class AppDatabase extends _$AppDatabase {
             try {
               await m.addColumn(sessionRecords, sessionRecords.notes);
             } catch (_) {}
+          }
+          if (from < 6) {
+            await m.createTable(sessionNotes);
           }
         },
       );

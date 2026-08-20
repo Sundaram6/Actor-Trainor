@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/providers/progress_providers.dart';
+import 'package:the_instrument/providers/session_notes_provider.dart';
 import 'session_detail_screen.dart';
 
 final sessionHistoryProvider = StreamProvider<List<SessionRecord>>((ref) {
@@ -163,13 +164,34 @@ class ProgressScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                formattedDate,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      formattedDate,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Consumer(
+                                    builder: (context, ref, child) {
+                                      final noteAsync = ref.watch(sessionNoteProvider(session.id));
+                                      final hasNote = (noteAsync.value != null && noteAsync.value!.isNotEmpty) ||
+                                          (session.notes != null && session.notes!.isNotEmpty);
+                                      if (hasNote) {
+                                        return const Icon(
+                                          Icons.notes_outlined,
+                                          color: Color(0xFFD4AF37),
+                                          size: 16,
+                                        );
+                                      }
+                                      return const SizedBox.shrink();
+                                    },
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 4),
                               Text(

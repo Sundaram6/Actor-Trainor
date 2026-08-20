@@ -5,6 +5,7 @@ import '../app.dart';
 import '../core/constants.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
+import '../providers/session_notes_provider.dart';
 import '../providers/today_provider.dart';
 import 'progress_screen.dart';
 
@@ -47,13 +48,7 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
     super.dispose();
   }
 
-  Future<void> _handleReturn() async {
-    final noteText = _notesController.text.trim();
-    if (noteText.isNotEmpty && widget.sessionRecordId != null) {
-      final db = ref.read(databaseProvider);
-      await db.updateSessionRecordNotes(widget.sessionRecordId!, noteText);
-    }
-
+  void _navigateToDashboard(BuildContext context) {
     ref.invalidate(statsProvider);
     ref.invalidate(weekProgressProvider);
     ref.invalidate(recentSessionsProvider);
@@ -69,8 +64,21 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
     }
   }
 
+  Future<void> _handleSaveNote() async {
+    final noteText = _notesController.text.trim();
+    if (noteText.isNotEmpty && widget.sessionRecordId != null) {
+      await ref.read(saveSessionNoteProvider)(widget.sessionRecordId!, noteText);
+      final db = ref.read(databaseProvider);
+      await db.updateSessionRecordNotes(widget.sessionRecordId!, noteText);
+    }
+    if (mounted) {
+      _navigateToDashboard(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    const gold = Color(0xFFD4AF37);
     final computedTotalMinutes = widget.totalMinutes ??
         kRoutineBlocks.fold<int>(0, (sum, b) => sum + b.durationMinutes);
     final completedCount = widget.blocksCompleted ??
@@ -90,7 +98,7 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
               const Icon(
                 Icons.check_circle_outline,
                 size: 80,
-                color: Color(0xFFD4AF37),
+                color: gold,
               ),
               const SizedBox(height: 24),
               const Text(
@@ -99,7 +107,7 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFFD4AF37),
+                  color: gold,
                   letterSpacing: 2,
                 ),
               ),
@@ -128,7 +136,7 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                     style: const TextStyle(
                       fontSize: 14,
                       fontStyle: FontStyle.italic,
-                      color: Color(0xFFD4AF37),
+                      color: gold,
                     ),
                   ),
                 ),
@@ -148,33 +156,56 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                 label: 'Status',
                 value: 'Closed',
               ),
-              const SizedBox(height: 20),
-              // Journal input field
+              const SizedBox(height: 24),
+
+              // Actor's Journal Note input field
               TextField(
                 controller: _notesController,
-                maxLines: 3,
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                maxLines: 4,
+                style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
                 decoration: InputDecoration(
-                  hintText: "What landed? What didn't?",
-                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+                  hintText: "What surfaced during today's work? What do you carry forward?",
+                  hintStyle: const TextStyle(color: Colors.white24),
                   filled: true,
-                  fillColor: const Color(0xFF141419),
-                  contentPadding: const EdgeInsets.all(16),
+                  fillColor: const Color(0xFF1A1A1A),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                    borderSide: const BorderSide(color: gold),
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _navigateToDashboard(context),
+                    child: const Text('SKIP', style: TextStyle(color: Colors.white38, fontSize: 14)),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: _handleSaveNote,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(120, 48),
+                      backgroundColor: gold,
+                      foregroundColor: const Color(0xFF0A0A0A),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    child: const Text('SAVE NOTE'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
+
               OutlinedButton(
                 onPressed: () async {
                   final streak = widget.streak ?? (await ref.read(databaseProvider).getCurrentStreak());
@@ -188,8 +219,8 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                   );
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFD4AF37)),
-                  foregroundColor: const Color(0xFFD4AF37),
+                  side: const BorderSide(color: gold),
+                  foregroundColor: gold,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -204,9 +235,9 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _handleReturn,
+                onPressed: () => _navigateToDashboard(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
+                  backgroundColor: gold,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(

@@ -1458,6 +1458,302 @@ class EveningLoadsCompanion extends UpdateCompanion<EveningLoad> {
   }
 }
 
+class $SessionNotesTable extends SessionNotes
+    with TableInfo<$SessionNotesTable, SessionNote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SessionNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, sessionId, note, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'session_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SessionNote> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SessionNote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SessionNote(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}session_id'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SessionNotesTable createAlias(String alias) {
+    return $SessionNotesTable(attachedDatabase, alias);
+  }
+}
+
+class SessionNote extends DataClass implements Insertable<SessionNote> {
+  final int id;
+  final int sessionId;
+  final String note;
+  final DateTime createdAt;
+  const SessionNote({
+    required this.id,
+    required this.sessionId,
+    required this.note,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<int>(sessionId);
+    map['note'] = Variable<String>(note);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SessionNotesCompanion toCompanion(bool nullToAbsent) {
+    return SessionNotesCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      note: Value(note),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SessionNote.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SessionNote(
+      id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<int>(json['sessionId']),
+      note: serializer.fromJson<String>(json['note']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<int>(sessionId),
+      'note': serializer.toJson<String>(note),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SessionNote copyWith({
+    int? id,
+    int? sessionId,
+    String? note,
+    DateTime? createdAt,
+  }) => SessionNote(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    note: note ?? this.note,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SessionNote copyWithCompanion(SessionNotesCompanion data) {
+    return SessionNote(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      note: data.note.present ? data.note.value : this.note,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SessionNote(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, sessionId, note, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SessionNote &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.note == this.note &&
+          other.createdAt == this.createdAt);
+}
+
+class SessionNotesCompanion extends UpdateCompanion<SessionNote> {
+  final Value<int> id;
+  final Value<int> sessionId;
+  final Value<String> note;
+  final Value<DateTime> createdAt;
+  const SessionNotesCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SessionNotesCompanion.insert({
+    this.id = const Value.absent(),
+    required int sessionId,
+    required String note,
+    this.createdAt = const Value.absent(),
+  }) : sessionId = Value(sessionId),
+       note = Value(note);
+  static Insertable<SessionNote> custom({
+    Expression<int>? id,
+    Expression<int>? sessionId,
+    Expression<String>? note,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (note != null) 'note': note,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SessionNotesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? sessionId,
+    Value<String>? note,
+    Value<DateTime>? createdAt,
+  }) {
+    return SessionNotesCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SessionNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1465,6 +1761,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SessionRecordsTable sessionRecords = $SessionRecordsTable(this);
   late final $DailyProgressTable dailyProgress = $DailyProgressTable(this);
   late final $EveningLoadsTable eveningLoads = $EveningLoadsTable(this);
+  late final $SessionNotesTable sessionNotes = $SessionNotesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1474,6 +1771,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sessionRecords,
     dailyProgress,
     eveningLoads,
+    sessionNotes,
   ];
 }
 
@@ -2275,6 +2573,181 @@ typedef $$EveningLoadsTableProcessedTableManager =
       EveningLoad,
       PrefetchHooks Function()
     >;
+typedef $$SessionNotesTableCreateCompanionBuilder =
+    SessionNotesCompanion Function({
+      Value<int> id,
+      required int sessionId,
+      required String note,
+      Value<DateTime> createdAt,
+    });
+typedef $$SessionNotesTableUpdateCompanionBuilder =
+    SessionNotesCompanion Function({
+      Value<int> id,
+      Value<int> sessionId,
+      Value<String> note,
+      Value<DateTime> createdAt,
+    });
+
+class $$SessionNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $SessionNotesTable> {
+  $$SessionNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SessionNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SessionNotesTable> {
+  $$SessionNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SessionNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SessionNotesTable> {
+  $$SessionNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SessionNotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SessionNotesTable,
+          SessionNote,
+          $$SessionNotesTableFilterComposer,
+          $$SessionNotesTableOrderingComposer,
+          $$SessionNotesTableAnnotationComposer,
+          $$SessionNotesTableCreateCompanionBuilder,
+          $$SessionNotesTableUpdateCompanionBuilder,
+          (
+            SessionNote,
+            BaseReferences<_$AppDatabase, $SessionNotesTable, SessionNote>,
+          ),
+          SessionNote,
+          PrefetchHooks Function()
+        > {
+  $$SessionNotesTableTableManager(_$AppDatabase db, $SessionNotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SessionNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SessionNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SessionNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> sessionId = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SessionNotesCompanion(
+                id: id,
+                sessionId: sessionId,
+                note: note,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int sessionId,
+                required String note,
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SessionNotesCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                note: note,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SessionNotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SessionNotesTable,
+      SessionNote,
+      $$SessionNotesTableFilterComposer,
+      $$SessionNotesTableOrderingComposer,
+      $$SessionNotesTableAnnotationComposer,
+      $$SessionNotesTableCreateCompanionBuilder,
+      $$SessionNotesTableUpdateCompanionBuilder,
+      (
+        SessionNote,
+        BaseReferences<_$AppDatabase, $SessionNotesTable, SessionNote>,
+      ),
+      SessionNote,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2287,4 +2760,6 @@ class $AppDatabaseManager {
       $$DailyProgressTableTableManager(_db, _db.dailyProgress);
   $$EveningLoadsTableTableManager get eveningLoads =>
       $$EveningLoadsTableTableManager(_db, _db.eveningLoads);
+  $$SessionNotesTableTableManager get sessionNotes =>
+      $$SessionNotesTableTableManager(_db, _db.sessionNotes);
 }

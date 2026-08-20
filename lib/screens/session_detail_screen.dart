@@ -7,6 +7,7 @@ import '../core/constants.dart' show allBlocks;
 import '../database/database.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
+import '../providers/session_notes_provider.dart';
 import '../providers/today_provider.dart';
 import '../screens/progress_screen.dart' show sessionHistoryProvider;
 
@@ -45,6 +46,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         notes: drift.Value(newNotes.isEmpty ? null : newNotes),
       ),
     );
+
+    await ref.read(saveSessionNoteProvider)(widget.record.id, newNotes);
 
     ref.invalidate(sessionHistoryProvider);
     ref.invalidate(dashboardStatsProvider);
@@ -174,6 +177,45 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             const SizedBox(height: 12),
             _DarkCard(
               child: Column(children: _parseBlocks().map((b) => _BlockRow(block: b)).toList()),
+            ),
+            const SizedBox(height: 24),
+
+            const _SectionTitle(title: 'ACTOR\'S JOURNAL'),
+            const SizedBox(height: 12),
+            Consumer(
+              builder: (context, ref, child) {
+                final noteAsync = ref.watch(sessionNoteProvider(widget.record.id));
+                return noteAsync.when(
+                  data: (note) {
+                    final effectiveNote = (note != null && note.isNotEmpty)
+                        ? note
+                        : (widget.record.notes != null && widget.record.notes!.isNotEmpty
+                            ? widget.record.notes
+                            : null);
+                    if (effectiveNote != null && effectiveNote.isNotEmpty) {
+                      return Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            left: BorderSide(color: gold, width: 2),
+                          ),
+                        ),
+                        padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
+                        child: Text(
+                          effectiveNote,
+                          style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                        ),
+                      );
+                    }
+                    return const Text(
+                      'No journal entry for this session.',
+                      style: TextStyle(color: Colors.white24, fontSize: 14, fontStyle: FontStyle.italic),
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, s) => const SizedBox.shrink(),
+                );
+              },
             ),
             const SizedBox(height: 32),
 
