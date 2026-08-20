@@ -13,6 +13,7 @@ import '../widgets/breathing_guide.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import '../widgets/notes_bottom_sheet.dart';
+import '../widgets/skip_reason_bottom_sheet.dart';
 import 'session_completion_screen.dart';
 import 'settings_screen.dart';
 import '../services/widget_service.dart';
@@ -38,6 +39,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
   bool _isRunning = false;
   bool _isPaused = false;
   late List<String> _blockOutcomes;
+  late List<String?> _skipReasons;
   String? _sessionIntention;
   final TextEditingController _intentionController = TextEditingController();
 
@@ -48,6 +50,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     unawaited(WakelockPlus.enable().catchError((_) {}));
     _currentIndex = widget.startBlockIndex;
     _blockOutcomes = List.filled(kRoutineBlocks.length, 'pending');
+    _skipReasons = List<String?>.filled(kRoutineBlocks.length, null);
     if (widget.initialIntention != null && widget.initialIntention!.isNotEmpty) {
       _sessionIntention = widget.initialIntention;
       ref.read(sessionStateServiceProvider).setIntention(widget.initialIntention);
@@ -148,6 +151,9 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       }
       if (saved.blockOutcomes != null) {
         _blockOutcomes = List<String>.from(saved.blockOutcomes!);
+      }
+      if (saved.skipReasons != null) {
+        _skipReasons = List<String?>.from(saved.skipReasons!);
       }
 
       setState(() {
@@ -398,6 +404,13 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                 onPressed: () async {
                   _timer?.cancel();
                   ref.read(ttsServiceProvider).stop();
+                  final blocksData = List.generate(kRoutineBlocks.length, (i) {
+                    if (_skipReasons[i] != null) {
+                      return {'status': _blockOutcomes[i], 'reason': _skipReasons[i]};
+                    }
+                    return _blockOutcomes[i];
+                  });
+
                   await SessionStateService().saveState(
                     blockIndex: _currentIndex,
                     stepIndex: _subStepIndex,
@@ -407,6 +420,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                     blockDurationSeconds: _blockDurationSeconds,
                     blockOutcomes: _blockOutcomes,
                     intention: _sessionIntention,
+                    skipReasons: _skipReasons,
                   );
 
                   // Record session progress in DB if any blocks finished
@@ -424,7 +438,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                       completedAt: drift.Value(now),
                       blocksCompleted: drift.Value(completedBlocks),
                       totalMinutes: drift.Value(loggedMins),
-                      blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
+                      blocksJson: drift.Value(jsonEncode(blocksData)),
                       intention: drift.Value(_sessionIntention),
                     ));
                   }
@@ -483,115 +497,25 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
     );
   }
 
-  Future<void> _showSkipBlockDialog() async {
+  Future<void> _skipCurrentBlock() async {
     ref.read(ttsServiceProvider).stop();
     final hapticsOn = ref.read(hapticsEnabledProvider);
     hapticLight(enabled: hapticsOn);
 
-    final currentBlock = kRoutineBlocks[_currentIndex];
-
-    showDialog(
+    final block = kRoutineBlocks[_currentIndex];
+    final reason = await showModalBottomSheet<String?>(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => RepaintBoundary(
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF141419),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF2A2A2A)),
-          ),
-          title: const Text(
-            'Skip Block?',
-            style: TextStyle(
-              color: Color(0xFFD4AF37),
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text.rich(
-                TextSpan(
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                  children: [
-                    const TextSpan(text: 'You are about to skip '),
-                    TextSpan(
-                      text: currentBlock.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const TextSpan(text: '. This block will be marked as skipped.'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  // CANCEL button (gold outline)
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFD4AF37),
-                        side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text(
-                        'CANCEL',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // SKIP button (gold fill background with dark text)
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD4AF37),
-                        foregroundColor: const Color(0xFF0A0A0F),
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(dialogContext);
-                        _blockOutcomes[_currentIndex] = 'skipped';
-                        _nextBlock();
-                      },
-                      child: const Text(
-                        'SKIP',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SkipReasonBottomSheet(blockName: block.name),
     );
+
+    if (reason == null) return;
+    if (!mounted) return;
+
+    _blockOutcomes[_currentIndex] = 'skipped';
+    _skipReasons[_currentIndex] = reason;
+    _nextBlock();
   }
 
   void _startTimer() {
@@ -620,6 +544,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             blockDurationSeconds: _blockDurationSeconds,
             blockOutcomes: _blockOutcomes,
             intention: _sessionIntention,
+            skipReasons: _skipReasons,
           );
         }
       } else {
@@ -669,6 +594,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         blockDurationSeconds: _blockDurationSeconds,
         blockOutcomes: _blockOutcomes,
         intention: _sessionIntention,
+        skipReasons: _skipReasons,
       );
     } else if (_isRunning) {
       // Pause
@@ -689,6 +615,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         blockDurationSeconds: _blockDurationSeconds,
         blockOutcomes: _blockOutcomes,
         intention: _sessionIntention,
+        skipReasons: _skipReasons,
       );
     } else {
       // First start
@@ -722,6 +649,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       blockDurationSeconds: _blockDurationSeconds,
       blockOutcomes: _blockOutcomes,
       intention: _sessionIntention,
+      skipReasons: _skipReasons,
     );
   }
 
@@ -754,6 +682,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
         blockDurationSeconds: _blockDurationSeconds,
         blockOutcomes: _blockOutcomes,
         intention: _sessionIntention,
+        skipReasons: _skipReasons,
       );
     }
   }
@@ -791,13 +720,26 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       isComplete: const drift.Value(true),
     ));
 
+    final blocksData = List.generate(kRoutineBlocks.length, (i) {
+      if (_skipReasons[i] != null) {
+        return {'status': _blockOutcomes[i], 'reason': _skipReasons[i]};
+      }
+      return _blockOutcomes[i];
+    });
+
     final insertedId = await db.insertSessionRecord(SessionRecordsCompanion(
       completedAt: drift.Value(now),
       blocksCompleted: drift.Value(completedBlocksCount),
       totalMinutes: drift.Value(totalMinutes),
-      blocksJson: drift.Value(jsonEncode(_blockOutcomes)),
+      blocksJson: drift.Value(jsonEncode(blocksData)),
       intention: drift.Value(_sessionIntention),
       notes: drift.Value(notes),
+    ));
+
+    await db.upsertDayProgress(DailyProgressCompanion(
+      date: drift.Value(today),
+      completed: const drift.Value(true),
+      minutesLogged: drift.Value(totalMinutes),
     ));
 
     await db.upsertDayProgress(DailyProgressCompanion(
@@ -1014,7 +956,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                           icon: isLastBlock ? Icons.check : Icons.fast_forward,
                           onPressed: _isPaused
                               ? null
-                              : (isLastBlock ? _onSessionComplete : _showSkipBlockDialog),
+                              : (isLastBlock ? _onSessionComplete : _skipCurrentBlock),
                         ),
                       ],
                     ),

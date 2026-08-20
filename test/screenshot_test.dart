@@ -12,7 +12,7 @@ import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
-import 'package:the_instrument/widgets/notes_bottom_sheet.dart';
+import 'package:the_instrument/widgets/skip_reason_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -74,7 +74,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('NotesBottomSheet renders correctly', (WidgetTester tester) async {
+  testWidgets('SkipReasonBottomSheet renders correctly', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -104,7 +104,7 @@ void main() {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => const NotesBottomSheet(),
+                    builder: (_) => const SkipReasonBottomSheet(blockName: 'Emotional Preparation'),
                   ),
                   child: const Text('Open'),
                 ),
@@ -119,11 +119,11 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(NotesBottomSheet), findsOneWidget);
-    expect(find.text('Session Reflections'), findsOneWidget);
-    expect(find.text('SAVE & CONTINUE'), findsOneWidget);
-    expect(find.text('SKIP'), findsOneWidget);
+    expect(find.byType(SkipReasonBottomSheet), findsOneWidget);
+    expect(find.text('Skip Emotional Preparation'), findsOneWidget);
+    expect(find.text('CONFIRM SKIP'), findsOneWidget);
+    expect(find.text('CANCEL'), findsOneWidget);
 
-    await captureBoundary(tester, rootKey, 'notes_bottom_sheet.png');
+    await captureBoundary(tester, rootKey, 'skip_reason_bottom_sheet.png');
   });
 }

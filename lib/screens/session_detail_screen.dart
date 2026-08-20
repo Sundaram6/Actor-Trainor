@@ -196,15 +196,24 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         final List<dynamic> decoded = jsonDecode(widget.record.blocksJson);
         return decoded.asMap().entries.map((e) {
           final idx = e.key;
-          final status = (e.value as String? ?? 'skipped').toLowerCase();
+          String status;
+          String? reason;
+          if (e.value is Map) {
+            final map = e.value as Map<String, dynamic>;
+            status = (map['status'] as String? ?? 'skipped').toLowerCase();
+            reason = map['reason'] as String?;
+          } else {
+            status = (e.value as String? ?? 'skipped').toLowerCase();
+            reason = null;
+          }
           final name = idx < allBlocks.length ? allBlocks[idx].title : 'Block ${idx + 1}';
-          return {'index': idx, 'name': name, 'completed': status == 'completed'};
+          return {'index': idx, 'name': name, 'completed': status == 'completed', 'reason': reason};
         }).toList();
       } catch (_) {}
     }
     return List.generate(totalBlocks, (i) {
       final name = i < allBlocks.length ? allBlocks[i].title : 'Block ${i + 1}';
-      return {'index': i, 'name': name, 'completed': i < widget.record.blocksCompleted};
+      return {'index': i, 'name': name, 'completed': i < widget.record.blocksCompleted, 'reason': null};
     });
   }
 
@@ -333,6 +342,7 @@ class _BlockRow extends StatelessWidget {
     final completed = block['completed'] as bool;
     final index = block['index'] as int;
     final name = block['name'] as String;
+    final reason = block['reason'] as String?;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -351,7 +361,24 @@ class _BlockRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(name, style: TextStyle(color: completed ? Colors.white.withValues(alpha: 0.9) : Colors.white38, fontSize: 14, fontWeight: completed ? FontWeight.w500 : FontWeight.normal)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    color: completed ? Colors.white.withValues(alpha: 0.9) : Colors.white38,
+                    fontSize: 14,
+                    fontWeight: completed ? FontWeight.w500 : FontWeight.normal,
+                  ),
+                ),
+                if (!completed && reason != null)
+                  Text(
+                    reason,
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+              ],
+            ),
           ),
           Icon(completed ? Icons.check_rounded : Icons.remove_rounded, color: completed ? gold : Colors.white24, size: 18),
         ],

@@ -12,6 +12,7 @@ class SessionState {
   final int elapsedSeconds;
   final DateTime? startedAt;
   final String? intention;
+  final List<String?>? skipReasons;
 
   SessionState({
     required this.currentBlockIndex,
@@ -19,6 +20,7 @@ class SessionState {
     required this.elapsedSeconds,
     this.startedAt,
     this.intention,
+    this.skipReasons,
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +29,7 @@ class SessionState {
     'elapsedSeconds': elapsedSeconds,
     'startedAt': startedAt?.toIso8601String(),
     'intention': intention,
+    'skipReasons': skipReasons,
   };
 
   factory SessionState.fromJson(Map<String, dynamic> json) => SessionState(
@@ -35,6 +38,7 @@ class SessionState {
     elapsedSeconds: json['elapsedSeconds'] as int? ?? 0,
     startedAt: json['startedAt'] != null ? DateTime.tryParse(json['startedAt'] as String) : null,
     intention: json['intention'] as String?,
+    skipReasons: (json['skipReasons'] as List<dynamic>?)?.map((e) => e as String?).toList(),
   );
 }
 
@@ -49,6 +53,7 @@ class SessionStateService {
   static const String _keyBlockDurationSeconds = 'session_block_duration_seconds';
   static const String _keyBlockOutcomes = 'session_block_outcomes';
   static const String _keyIntention = 'session_intention';
+  static const String _keySkipReasons = 'session_skip_reasons';
   static const String _keySessionStateJson = 'session_state';
 
   SessionState? _inMemoryState;
@@ -69,6 +74,7 @@ class SessionStateService {
       elapsedSeconds: _inMemoryState?.elapsedSeconds ?? 0,
       startedAt: _inMemoryState?.startedAt,
       intention: intention,
+      skipReasons: _inMemoryState?.skipReasons,
     );
   }
 
@@ -81,6 +87,7 @@ class SessionStateService {
     int? blockDurationSeconds,
     List<String>? blockOutcomes,
     String? intention,
+    List<String?>? skipReasons,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyActive, true);
@@ -101,6 +108,9 @@ class SessionStateService {
     if (intention != null) {
       await prefs.setString(_keyIntention, intention);
     }
+    if (skipReasons != null) {
+      await prefs.setString(_keySkipReasons, jsonEncode(skipReasons));
+    }
 
     final stateObj = {
       'currentBlockIndex': blockIndex,
@@ -108,6 +118,7 @@ class SessionStateService {
       'elapsedSeconds': remainingSeconds,
       'startedAt': startedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'intention': intention,
+      'skipReasons': skipReasons,
     };
     await prefs.setString(_keySessionStateJson, jsonEncode(stateObj));
 
@@ -117,6 +128,7 @@ class SessionStateService {
       elapsedSeconds: remainingSeconds,
       startedAt: startedAt,
       intention: intention,
+      skipReasons: skipReasons,
     );
   }
 
@@ -136,6 +148,7 @@ class SessionStateService {
         final bIndex = data['currentBlockIndex'] as int? ?? data['blockIndex'] as int? ?? 0;
         final sIndex = data['currentSubStepIndex'] as int? ?? data['stepIndex'] as int? ?? 0;
         final secs = data['elapsedSeconds'] as int? ?? data['remainingSeconds'] as int? ?? 0;
+        final skipReasons = (data['skipReasons'] as List<dynamic>?)?.map((e) => e as String?).toList();
 
         _inMemoryState = SessionState(
           currentBlockIndex: bIndex,
@@ -143,6 +156,7 @@ class SessionStateService {
           elapsedSeconds: secs,
           startedAt: started,
           intention: intention,
+          skipReasons: skipReasons,
         );
 
         return SessionSnapshot(
@@ -151,6 +165,7 @@ class SessionStateService {
           remainingSeconds: secs,
           startedAt: started,
           intention: intention,
+          skipReasons: skipReasons,
         );
       } catch (_) {}
     }
@@ -177,6 +192,14 @@ class SessionStateService {
       } catch (_) {}
     }
 
+    List<String?>? skipReasons;
+    final skipReasonsRaw = prefs.getString(_keySkipReasons);
+    if (skipReasonsRaw != null) {
+      try {
+        skipReasons = (jsonDecode(skipReasonsRaw) as List<dynamic>).map((e) => e as String?).toList();
+      } catch (_) {}
+    }
+
     final intention = prefs.getString(_keyIntention);
 
     _inMemoryState = SessionState(
@@ -187,6 +210,7 @@ class SessionStateService {
           ? DateTime.fromMillisecondsSinceEpoch(blockStartedAtMillis)
           : null,
       intention: intention,
+      skipReasons: skipReasons,
     );
 
     return SessionSnapshot(
@@ -200,6 +224,7 @@ class SessionStateService {
       blockDurationSeconds: prefs.getInt(_keyBlockDurationSeconds),
       blockOutcomes: blockOutcomes,
       intention: intention,
+      skipReasons: skipReasons,
     );
   }
 
@@ -217,6 +242,7 @@ class SessionStateService {
     await prefs.remove(_keyBlockDurationSeconds);
     await prefs.remove(_keyBlockOutcomes);
     await prefs.remove(_keyIntention);
+    await prefs.remove(_keySkipReasons);
   }
 }
 
@@ -229,6 +255,7 @@ class SessionSnapshot {
   final int? blockDurationSeconds;
   final List<String>? blockOutcomes;
   final String? intention;
+  final List<String?>? skipReasons;
 
   int get currentBlockIndex => blockIndex;
   int get currentSubStepIndex => stepIndex;
@@ -243,5 +270,6 @@ class SessionSnapshot {
     this.blockDurationSeconds,
     this.blockOutcomes,
     this.intention,
+    this.skipReasons,
   });
 }
