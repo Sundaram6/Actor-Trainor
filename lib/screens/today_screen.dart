@@ -6,6 +6,7 @@ import '../providers/today_provider.dart';
 import '../services/widget_service.dart';
 import '../widgets/intention_bottom_sheet.dart';
 import 'evening_load_screen.dart';
+import 'journal_screen.dart';
 import 'session_screen.dart';
 
 class TodayScreen extends ConsumerWidget {
@@ -337,6 +338,55 @@ class TodayScreen extends ConsumerWidget {
                       ),
                     );
                   },
+                ),
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const JournalScreen()),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.goldAccent.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.menu_book_outlined, color: AppColors.goldAccent, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Journal',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Review your practice reflections',
+                                style: TextStyle(color: Colors.white38, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 14),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
               ]),

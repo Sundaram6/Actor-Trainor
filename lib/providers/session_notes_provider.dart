@@ -22,5 +22,22 @@ final saveSessionNoteProvider = Provider<Future<void> Function(int, String)>((re
           mode: InsertMode.replace,
         );
     ref.invalidate(sessionNoteProvider(sessionId));
+    ref.invalidate(allSessionNotesProvider);
   };
+});
+
+final allSessionNotesProvider = StreamProvider<List<({SessionRecord session, String note})>>((ref) async* {
+  final db = ref.watch(databaseProvider);
+  final sessions = await db.select(db.sessionRecords).get();
+  final notes = await db.select(db.sessionNotes).get();
+
+  final result = <({SessionRecord session, String note})>[];
+  for (final note in notes) {
+    final session = sessions.where((s) => s.id == note.sessionId).firstOrNull;
+    if (session != null) {
+      result.add((session: session, note: note.note));
+    }
+  }
+  result.sort((a, b) => b.session.completedAt.compareTo(a.session.completedAt));
+  yield result;
 });

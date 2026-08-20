@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -11,6 +12,7 @@ import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/providers/progress_providers.dart';
+import 'package:the_instrument/screens/journal_screen.dart';
 import 'package:the_instrument/screens/onboarding_screen.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/screens/session_completion_screen.dart';
@@ -339,5 +341,55 @@ void main() {
     expect(find.text('SESSION COMPLETE'), findsOneWidget);
 
     await captureBoundary(tester, rootKey, 'session_completion_note.png');
+  });
+
+  testWidgets('JournalScreen renders with entries', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    // Insert mock session and note
+    final sessionId = await testDb.insertSessionRecord(
+      SessionRecordsCompanion.insert(
+        completedAt: DateTime.now(),
+        blocksCompleted: 9,
+        totalMinutes: 112,
+        notes: const Value('Felt deep connection during the memory recall block. Need to work on vocal resonance.'),
+      ),
+    );
+    await testDb.into(testDb.sessionNotes).insert(
+      SessionNotesCompanion.insert(
+        sessionId: sessionId,
+        note: 'Felt deep connection during the memory recall block. Need to work on vocal resonance.',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const JournalScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("ACTOR'S JOURNAL"), findsOneWidget);
+    expect(find.textContaining('MIN'), findsWidgets);
+    expect(find.textContaining('Felt deep connection'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'journal_screen.png');
   });
 }
