@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -10,10 +12,9 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/screens/session_detail_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
-import 'package:the_instrument/services/session_state_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
-import 'package:the_instrument/widgets/intention_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> loadRealFonts() async {
@@ -75,17 +76,33 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('SessionStateService saves and gets intention', (WidgetTester tester) async {
-    final service = SessionStateService();
-    await service.setIntention('Emotional authenticity');
-    expect(service.currentState?.intention, 'Emotional authenticity');
-  });
-
-  testWidgets('IntentionBottomSheet renders correctly', (WidgetTester tester) async {
+  testWidgets('SessionDetailScreen delete confirmation dialog', (tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    final record = SessionRecord(
+      id: 1,
+      completedAt: DateTime(2026, 8, 20, 10, 30),
+      blocksCompleted: 7,
+      totalMinutes: 98,
+      intention: 'To find emotional truth in the scene',
+      notes: 'Skipped Block 3',
+      blocksJson: jsonEncode([
+        'completed', 'completed', 'skipped', 'completed',
+        'completed', 'completed', 'skipped', 'completed', 'completed'
+      ]),
+    );
+
+    await testDb.insertSessionRecord(SessionRecordsCompanion.insert(
+      completedAt: record.completedAt,
+      blocksCompleted: record.blocksCompleted,
+      totalMinutes: record.totalMinutes,
+      intention: Value(record.intention),
+      notes: Value(record.notes),
+      blocksJson: Value(record.blocksJson),
+    ));
 
     final GlobalKey rootKey = GlobalKey();
 
@@ -102,39 +119,23 @@ void main() {
             key: rootKey,
             child: child ?? const SizedBox(),
           ),
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => showModalBottomSheet<String?>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => const IntentionBottomSheet(),
-                  ),
-                  child: const Text('Open'),
-                ),
-              ),
-            ),
-          ),
+          home: SessionDetailScreen(record: record),
         ),
       ),
     );
-
-    await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(IntentionBottomSheet), findsOneWidget);
-    expect(find.text('Set Your Intention'), findsOneWidget);
-    expect(find.text('START SESSION'), findsOneWidget);
-    expect(find.text('SKIP'), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
 
-    await tester.enterText(
-      find.byType(TextField),
-      'To find emotional truth and stay grounded in the scene.',
-    );
+    // Tap delete icon
+    await tester.tap(find.byIcon(Icons.delete_outline));
     await tester.pumpAndSettle();
 
-    await captureBoundary(tester, rootKey, 'intention_bottom_sheet.png');
+    expect(find.text('Delete Record'), findsOneWidget);
+    expect(find.text('This session record will be permanently removed. This cannot be undone.'), findsOneWidget);
+    expect(find.text('CANCEL'), findsOneWidget);
+    expect(find.text('DELETE'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'session_detail_delete_dialog.png');
   });
 }

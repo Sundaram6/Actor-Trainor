@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/constants.dart' show allBlocks;
 import '../database/database.dart';
+import '../providers/database_provider.dart';
+import '../providers/progress_providers.dart';
+import '../providers/today_provider.dart';
+import 'progress_screen.dart';
 
 class SessionDetailScreen extends ConsumerWidget {
   final SessionRecord record;
@@ -25,6 +29,11 @@ class SessionDetailScreen extends ConsumerWidget {
           style: TextStyle(color: gold, fontWeight: FontWeight.w600),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            color: Colors.white38,
+            onPressed: () => _confirmDelete(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
             color: gold,
@@ -95,6 +104,62 @@ class SessionDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    const gold = Color(0xFFD4AF37);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => RepaintBoundary(
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Delete Record',
+            style: TextStyle(color: gold, fontWeight: FontWeight.w600),
+          ),
+          content: const Text(
+            'This session record will be permanently removed. This cannot be undone.',
+            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('DELETE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final db = ref.read(databaseProvider);
+    await (db.delete(db.sessionRecords)..where((t) => t.id.equals(record.id))).go();
+
+    // Refresh all downstream providers
+    ref.invalidate(sessionHistoryProvider);
+    ref.invalidate(dashboardStatsProvider);
+    ref.invalidate(todayStatusProvider);
+    ref.invalidate(statsProvider);
+    ref.invalidate(weekProgressProvider);
+    ref.invalidate(mostSkippedBlockProvider);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session deleted', style: TextStyle(color: Colors.white)),
+          backgroundColor: Color(0xFF424242),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context); // Return to ProgressScreen
+    }
   }
 
   List<Map<String, dynamic>> _parseBlocks() {
