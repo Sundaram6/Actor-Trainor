@@ -11,6 +11,7 @@ import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
 import 'package:the_instrument/providers/progress_providers.dart';
+import 'package:the_instrument/screens/onboarding_screen.dart';
 import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
@@ -75,6 +76,41 @@ void main() {
 
   tearDown(() async {
     await testDb.close();
+  });
+
+  testWidgets('OnboardingScreen page 1 renders', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const OnboardingScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('The Method'), findsOneWidget);
+    expect(find.text('NEXT'), findsOneWidget);
+    expect(find.byIcon(Icons.theater_comedy_outlined), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'onboarding_screen_1.png');
   });
 
   testWidgets('StreakCalendar renders with active days', (WidgetTester tester) async {
