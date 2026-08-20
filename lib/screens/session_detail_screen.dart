@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -7,15 +8,66 @@ import '../database/database.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/today_provider.dart';
-import 'progress_screen.dart';
+import '../screens/progress_screen.dart' show sessionHistoryProvider;
 
-class SessionDetailScreen extends ConsumerWidget {
+class SessionDetailScreen extends ConsumerStatefulWidget {
   final SessionRecord record;
-
   const SessionDetailScreen({super.key, required this.record});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SessionDetailScreen> createState() => _SessionDetailScreenState();
+}
+
+class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
+  bool _isEditingNotes = false;
+  late final TextEditingController _notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController(text: widget.record.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveNotes() async {
+    final newNotes = _notesController.text.trim();
+    final db = ref.read(databaseProvider);
+
+    await (db.update(db.sessionRecords)
+          ..where((t) => t.id.equals(widget.record.id)))
+        .write(
+      SessionRecordsCompanion(
+        notes: drift.Value(newNotes.isEmpty ? null : newNotes),
+      ),
+    );
+
+    ref.invalidate(sessionHistoryProvider);
+    ref.invalidate(dashboardStatsProvider);
+    ref.invalidate(todayStatusProvider);
+    ref.invalidate(statsProvider);
+    ref.invalidate(weekProgressProvider);
+    ref.invalidate(mostSkippedBlockProvider);
+
+    setState(() => _isEditingNotes = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Notes updated', style: TextStyle(color: Colors.white)),
+          backgroundColor: Color(0xFF1B5E20),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     const gold = Color(0xFFD4AF37);
 
     return Scaffold(
@@ -32,12 +84,12 @@ class SessionDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.delete_outline),
             color: Colors.white38,
-            onPressed: () => _confirmDelete(context, ref),
+            onPressed: _confirmDelete,
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
             color: gold,
-            onPressed: () => _shareRecord(context),
+            onPressed: _shareRecord,
           ),
         ],
       ),
@@ -46,46 +98,78 @@ class SessionDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Timestamp
             Text(
-              _formatDate(record.completedAt),
+              _formatDate(widget.record.completedAt),
               style: const TextStyle(color: Colors.white54, fontSize: 14),
             ),
             const SizedBox(height: 24),
 
-            // Stats row
             Row(
               children: [
-                _StatCard(
-                  label: 'BLOCKS',
-                  value: '${record.blocksCompleted} / 9',
-                ),
+                _StatCard(label: 'BLOCKS', value: '${widget.record.blocksCompleted} / 9'),
                 const SizedBox(width: 12),
-                _StatCard(
-                  label: 'DURATION',
-                  value: '${record.totalMinutes} min',
-                ),
+                _StatCard(label: 'DURATION', value: '${widget.record.totalMinutes} min'),
               ],
             ),
             const SizedBox(height: 24),
 
-            // Intention
-            if (record.intention != null && record.intention!.isNotEmpty) ...[
+            if (widget.record.intention != null && widget.record.intention!.isNotEmpty) ...[
               const _SectionTitle(title: 'INTENTION'),
               const SizedBox(height: 8),
-              _DarkCard(child: Text(record.intention!, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5))),
+              _DarkCard(child: Text(widget.record.intention!, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5))),
               const SizedBox(height: 24),
             ],
 
-            // Notes
-            if (record.notes != null && record.notes!.isNotEmpty) ...[
-              const _SectionTitle(title: 'NOTES'),
-              const SizedBox(height: 8),
-              _DarkCard(child: Text(record.notes!, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5))),
-              const SizedBox(height: 24),
-            ],
+            // NOTES — editable
+            Row(
+              children: [
+                const _SectionTitle(title: 'NOTES'),
+                const Spacer(),
+                if (!_isEditingNotes)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    color: Colors.white38,
+                    onPressed: () => setState(() => _isEditingNotes = true),
+                  )
+                else
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _isEditingNotes = false;
+                          _notesController.text = widget.record.notes ?? '';
+                        }),
+                        child: const Text('CANCEL', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      ),
+                      TextButton(
+                        onPressed: _saveNotes,
+                        child: const Text('SAVE', style: TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _DarkCard(
+              child: _isEditingNotes
+                  ? TextField(
+                      controller: _notesController,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                      maxLines: null,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: 'Add post-session reflections...',
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    )
+                  : widget.record.notes != null && widget.record.notes!.isNotEmpty
+                      ? Text(widget.record.notes!, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5))
+                      : Text('No notes added.', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontStyle: FontStyle.italic)),
+            ),
+            const SizedBox(height: 24),
 
-            // Block Breakdown
             const _SectionTitle(title: 'BLOCK BREAKDOWN'),
             const SizedBox(height: 12),
             _DarkCard(
@@ -93,7 +177,6 @@ class SessionDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
 
-            // Footer
             Center(
               child: Text(
                 'The Instrument · Actor Training',
@@ -106,68 +189,11 @@ class SessionDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    const gold = Color(0xFFD4AF37);
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => RepaintBoundary(
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Delete Record',
-            style: TextStyle(color: gold, fontWeight: FontWeight.w600),
-          ),
-          content: const Text(
-            'This session record will be permanently removed. This cannot be undone.',
-            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('DELETE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    final db = ref.read(databaseProvider);
-    await (db.delete(db.sessionRecords)..where((t) => t.id.equals(record.id))).go();
-
-    // Refresh all downstream providers
-    ref.invalidate(sessionHistoryProvider);
-    ref.invalidate(dashboardStatsProvider);
-    ref.invalidate(todayStatusProvider);
-    ref.invalidate(statsProvider);
-    ref.invalidate(weekProgressProvider);
-    ref.invalidate(mostSkippedBlockProvider);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Session deleted', style: TextStyle(color: Colors.white)),
-          backgroundColor: Color(0xFF424242),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      Navigator.pop(context); // Return to ProgressScreen
-    }
-  }
-
   List<Map<String, dynamic>> _parseBlocks() {
     const totalBlocks = 9;
-
-    if (record.blocksJson.isNotEmpty) {
+    if (widget.record.blocksJson.isNotEmpty) {
       try {
-        final List<dynamic> decoded = jsonDecode(record.blocksJson);
+        final List<dynamic> decoded = jsonDecode(widget.record.blocksJson);
         return decoded.asMap().entries.map((e) {
           final idx = e.key;
           final status = (e.value as String? ?? 'skipped').toLowerCase();
@@ -176,11 +202,9 @@ class SessionDetailScreen extends ConsumerWidget {
         }).toList();
       } catch (_) {}
     }
-
-    // Fallback: infer from blocksCompleted count
     return List.generate(totalBlocks, (i) {
       final name = i < allBlocks.length ? allBlocks[i].title : 'Block ${i + 1}';
-      return {'index': i, 'name': name, 'completed': i < record.blocksCompleted};
+      return {'index': i, 'name': name, 'completed': i < widget.record.blocksCompleted};
     });
   }
 
@@ -191,15 +215,51 @@ class SessionDetailScreen extends ConsumerWidget {
     return '${months[dt.month - 1]} $day$suffix, ${dt.year} · ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  void _shareRecord(BuildContext context) {
+  Future<void> _confirmDelete() async {
+    const gold = Color(0xFFD4AF37);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Record', style: TextStyle(color: gold, fontWeight: FontWeight.w600)),
+        content: const Text('This session record will be permanently removed. This cannot be undone.', style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final db = ref.read(databaseProvider);
+    await (db.delete(db.sessionRecords)..where((t) => t.id.equals(widget.record.id))).go();
+
+    ref.invalidate(sessionHistoryProvider);
+    ref.invalidate(dashboardStatsProvider);
+    ref.invalidate(todayStatusProvider);
+    ref.invalidate(statsProvider);
+    ref.invalidate(weekProgressProvider);
+    ref.invalidate(mostSkippedBlockProvider);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session deleted', style: TextStyle(color: Colors.white)), backgroundColor: Color(0xFF424242), duration: Duration(seconds: 2)),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  void _shareRecord() {
     final buffer = StringBuffer()
       ..writeln('🎭 The Instrument — Session Record')
       ..writeln('')
-      ..writeln('📅 ${_formatDate(record.completedAt)}')
-      ..writeln('⏱️ ${record.totalMinutes} minutes')
-      ..writeln('🧱 ${record.blocksCompleted} / 9 blocks');
-    if (record.intention != null) buffer.writeln('🎯 Intention: ${record.intention}');
-    if (record.notes != null) buffer.writeln('📝 Notes: ${record.notes}');
+      ..writeln('📅 ${_formatDate(widget.record.completedAt)}')
+      ..writeln('⏱️ ${widget.record.totalMinutes} minutes')
+      ..writeln('🧱 ${widget.record.blocksCompleted} / 9 blocks');
+    if (widget.record.intention != null) buffer.writeln('🎯 Intention: ${widget.record.intention}');
+    if (widget.record.notes != null) buffer.writeln('📝 Notes: ${widget.record.notes}');
     buffer.writeln('');
     buffer.writeln('Trained with The Instrument.');
     Share.share(buffer.toString(), subject: 'The Instrument Session Record');
@@ -240,10 +300,7 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2),
-    );
+    return Text(title, style: const TextStyle(color: Color(0xFFD4AF37), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2));
   }
 }
 
@@ -290,27 +347,13 @@ class _BlockRow extends StatelessWidget {
               border: Border.all(color: completed ? gold : Colors.white24),
             ),
             alignment: Alignment.center,
-            child: Text(
-              '${index + 1}',
-              style: TextStyle(color: completed ? gold : Colors.white38, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
+            child: Text('${index + 1}', style: TextStyle(color: completed ? gold : Colors.white38, fontSize: 12, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                color: completed ? Colors.white.withValues(alpha: 0.9) : Colors.white38,
-                fontSize: 14,
-                fontWeight: completed ? FontWeight.w500 : FontWeight.normal,
-              ),
-            ),
+            child: Text(name, style: TextStyle(color: completed ? Colors.white.withValues(alpha: 0.9) : Colors.white38, fontSize: 14, fontWeight: completed ? FontWeight.w500 : FontWeight.normal)),
           ),
-          Icon(
-            completed ? Icons.check_rounded : Icons.remove_rounded,
-            color: completed ? gold : Colors.white24,
-            size: 18,
-          ),
+          Icon(completed ? Icons.check_rounded : Icons.remove_rounded, color: completed ? gold : Colors.white24, size: 18),
         ],
       ),
     );

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -76,7 +75,7 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('SessionDetailScreen delete confirmation dialog', (tester) async {
+  testWidgets('SessionDetailScreen notes edit mode', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -85,24 +84,12 @@ void main() {
     final record = SessionRecord(
       id: 1,
       completedAt: DateTime(2026, 8, 20, 10, 30),
-      blocksCompleted: 7,
+      blocksCompleted: 9,
       totalMinutes: 98,
-      intention: 'To find emotional truth in the scene',
-      notes: 'Skipped Block 3',
-      blocksJson: jsonEncode([
-        'completed', 'completed', 'skipped', 'completed',
-        'completed', 'completed', 'skipped', 'completed', 'completed'
-      ]),
+      intention: 'To find emotional truth',
+      notes: 'Strong connection in Block 5',
+      blocksJson: jsonEncode(List.generate(9, (_) => 'completed')),
     );
-
-    await testDb.insertSessionRecord(SessionRecordsCompanion.insert(
-      completedAt: record.completedAt,
-      blocksCompleted: record.blocksCompleted,
-      totalMinutes: record.totalMinutes,
-      intention: Value(record.intention),
-      notes: Value(record.notes),
-      blocksJson: Value(record.blocksJson),
-    ));
 
     final GlobalKey rootKey = GlobalKey();
 
@@ -125,17 +112,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-    // Tap delete icon
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    // Tap edit icon to enter edit mode
+    await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Delete Record'), findsOneWidget);
-    expect(find.text('This session record will be permanently removed. This cannot be undone.'), findsOneWidget);
+    expect(find.text('SAVE'), findsOneWidget);
     expect(find.text('CANCEL'), findsOneWidget);
-    expect(find.text('DELETE'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
 
-    await captureBoundary(tester, rootKey, 'session_detail_delete_dialog.png');
+    await captureBoundary(tester, rootKey, 'session_detail_notes_edit.png');
   });
 }
