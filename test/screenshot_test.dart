@@ -10,6 +10,8 @@ import 'package:the_instrument/core/constants.dart';
 import 'package:the_instrument/core/theme.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/providers/progress_providers.dart';
+import 'package:the_instrument/screens/progress_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
 import 'package:the_instrument/widgets/skip_reason_bottom_sheet.dart';
@@ -72,6 +74,59 @@ void main() {
 
   tearDown(() async {
     await testDb.close();
+  });
+
+  testWidgets('WeeklyReportCard renders with data', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+        ],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const Scaffold(
+            backgroundColor: Color(0xFF0A0A0A),
+            body: Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: WeeklyReportCard(
+                  report: WeeklyReport(
+                    sessionsCompleted: 5,
+                    totalMinutes: 312,
+                    completionRate: 0.78,
+                    mostSkippedBlock: 'Character Embodiment',
+                    mostSkippedCount: 3,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WeeklyReportCard), findsOneWidget);
+    expect(find.text('THIS WEEK'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(find.text('312'), findsOneWidget);
+    expect(find.text('78%'), findsOneWidget);
+    expect(find.text('Character Embodiment'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'weekly_report_card.png');
   });
 
   testWidgets('SkipReasonBottomSheet renders correctly', (WidgetTester tester) async {

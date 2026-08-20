@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:the_instrument/database/database.dart';
 import 'package:the_instrument/providers/database_provider.dart';
+import 'package:the_instrument/providers/progress_providers.dart';
 import 'session_detail_screen.dart';
 
 final sessionHistoryProvider = StreamProvider<List<SessionRecord>>((ref) {
@@ -58,10 +59,23 @@ class ProgressScreen extends ConsumerWidget {
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: sessions.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemCount: sessions.length + 1,
+            separatorBuilder: (context, index) => SizedBox(height: index == 0 ? 16 : 12),
             itemBuilder: (context, index) {
-              final session = sessions[sessions.length - 1 - index]; // newest first
+              if (index == 0) {
+                return Consumer(
+                  builder: (context, ref, child) {
+                    final weeklyAsync = ref.watch(weeklyReportProvider);
+                    return weeklyAsync.when(
+                      data: (report) => _WeeklyReportCard(report: report),
+                      loading: () => const SizedBox.shrink(),
+                      error: (err, stack) => const SizedBox.shrink(),
+                    );
+                  },
+                );
+              }
+
+              final session = sessions[sessions.length - index]; // newest first
               final date = session.completedAt;
               final formattedDate = DateFormat('EEE, MMM d').format(date);
               final formattedTime = DateFormat('h:mm a').format(date);
@@ -72,7 +86,14 @@ class ProgressScreen extends ConsumerWidget {
                 if (parsed.isNotEmpty) {
                   outcomes = List<String>.generate(
                     9,
-                    (i) => i < parsed.length ? parsed[i].toString() : 'pending',
+                    (i) {
+                      if (i >= parsed.length) return 'pending';
+                      final item = parsed[i];
+                      if (item is Map) {
+                        return (item['status'] as String?) ?? 'pending';
+                      }
+                      return item.toString();
+                    },
                   );
                 } else {
                   for (int i = 0; i < session.blocksCompleted.clamp(0, 9); i++) {
@@ -214,6 +235,97 @@ class ProgressScreen extends ConsumerWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+typedef _WeeklyReportCard = WeeklyReportCard;
+typedef _MiniStat = MiniStat;
+
+class WeeklyReportCard extends StatelessWidget {
+  final WeeklyReport report;
+  const WeeklyReportCard({super.key, required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFD4AF37);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'THIS WEEK',
+            style: TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _MiniStat(label: 'SESSIONS', value: '${report.sessionsCompleted}'),
+              const SizedBox(width: 12),
+              _MiniStat(label: 'MINUTES', value: '${report.totalMinutes}'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _MiniStat(label: 'COMPLETION', value: '${(report.completionRate * 100).toStringAsFixed(0)}%'),
+              const SizedBox(width: 12),
+              _MiniStat(
+                label: 'MOST SKIPPED',
+                value: report.mostSkippedBlock ?? '—',
+                smallValue: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool smallValue;
+  const MiniStat({super.key, required this.label, required this.value, this.smallValue = false});
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFD4AF37);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0A0A),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(color: gold, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: smallValue ? 13 : 18,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
