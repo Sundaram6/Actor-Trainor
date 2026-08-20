@@ -176,6 +176,19 @@ class ProgressScreen extends ConsumerWidget {
                                       ),
                                     ),
                                   ),
+                                  if (session.qualityRating != null) ...[
+                                    Row(
+                                      children: List.generate(
+                                        session.qualityRating!,
+                                        (i) => const Icon(
+                                          Icons.star_rounded,
+                                          color: Color(0xFFD4AF37),
+                                          size: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
                                   Consumer(
                                     builder: (context, ref, child) {
                                       final noteAsync = ref.watch(sessionNoteProvider(session.id));

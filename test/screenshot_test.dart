@@ -429,4 +429,48 @@ void main() {
 
     await captureBoundary(tester, rootKey, 'checkin_screen.png');
   });
+
+  testWidgets('SessionCompletionScreen star rating renders', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const SessionCompletionScreen(
+            totalMinutes: 112,
+            blocksCompleted: 9,
+            intention: 'To stay open',
+            sessionRecordId: 1,
+            streak: 3,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(5));
+    expect(find.text('Rate this session'), findsOneWidget);
+
+    // Tap 4th star
+    await tester.tap(find.byIcon(Icons.star_border_rounded).at(3));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star_rounded), findsNWidgets(4));
+    expect(find.text('Strong'), findsOneWidget);
+
+    await captureBoundary(tester, rootKey, 'session_completion_rating.png');
+  });
 }

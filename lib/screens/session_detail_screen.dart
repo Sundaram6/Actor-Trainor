@@ -102,9 +102,26 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _formatDate(widget.record.completedAt),
-              style: const TextStyle(color: Colors.white54, fontSize: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _formatDate(widget.record.completedAt),
+                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  ),
+                ),
+                if (widget.record.qualityRating != null)
+                  Row(
+                    children: List.generate(5, (i) {
+                      final isFilled = i < widget.record.qualityRating!;
+                      return Icon(
+                        isFilled ? Icons.star_rounded : Icons.star_border_rounded,
+                        color: isFilled ? gold : Colors.white24,
+                        size: 18,
+                      );
+                    }),
+                  ),
+              ],
             ),
             const SizedBox(height: 24),
 

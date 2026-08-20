@@ -1,8 +1,10 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../app.dart';
 import '../core/constants.dart';
+import '../database/database.dart';
 import '../providers/database_provider.dart';
 import '../providers/progress_providers.dart';
 import '../providers/session_notes_provider.dart';
@@ -35,6 +37,8 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
 
 class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScreen> {
   late final TextEditingController _notesController;
+  int _rating = 0;
+  final _ratingLabels = ['Struggled', 'Below average', 'Solid', 'Strong', 'Exceptional'];
 
   @override
   void initState() {
@@ -48,7 +52,14 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
     super.dispose();
   }
 
-  void _navigateToDashboard(BuildContext context) {
+  Future<void> _navigateToDashboard() async {
+    if (_rating > 0 && widget.sessionRecordId != null) {
+      final db = ref.read(databaseProvider);
+      await (db.update(db.sessionRecords)
+            ..where((r) => r.id.equals(widget.sessionRecordId!)))
+          .write(SessionRecordsCompanion(qualityRating: drift.Value(_rating)));
+    }
+
     ref.invalidate(statsProvider);
     ref.invalidate(weekProgressProvider);
     ref.invalidate(recentSessionsProvider);
@@ -66,13 +77,20 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
 
   Future<void> _handleSaveNote() async {
     final noteText = _notesController.text.trim();
-    if (noteText.isNotEmpty && widget.sessionRecordId != null) {
-      await ref.read(saveSessionNoteProvider)(widget.sessionRecordId!, noteText);
+    if (widget.sessionRecordId != null) {
       final db = ref.read(databaseProvider);
-      await db.updateSessionRecordNotes(widget.sessionRecordId!, noteText);
+      if (noteText.isNotEmpty) {
+        await ref.read(saveSessionNoteProvider)(widget.sessionRecordId!, noteText);
+        await db.updateSessionRecordNotes(widget.sessionRecordId!, noteText);
+      }
+      if (_rating > 0) {
+        await (db.update(db.sessionRecords)
+              ..where((r) => r.id.equals(widget.sessionRecordId!)))
+            .write(SessionRecordsCompanion(qualityRating: drift.Value(_rating)));
+      }
     }
     if (mounted) {
-      _navigateToDashboard(context);
+      _navigateToDashboard();
     }
   }
 
@@ -158,6 +176,35 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
               ),
               const SizedBox(height: 24),
 
+              // 5-Star Session Quality Rating
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  final starIndex = index + 1;
+                  final isFilled = starIndex <= _rating;
+                  return GestureDetector(
+                    onTap: () => setState(() => _rating = starIndex),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(
+                        isFilled ? Icons.star_rounded : Icons.star_border_rounded,
+                        color: isFilled ? gold : Colors.white24,
+                        size: 36,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  _rating == 0 ? 'Rate this session' : _ratingLabels[_rating - 1],
+                  style: const TextStyle(color: Colors.white38, fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // Actor's Journal Note input field
               TextField(
                 controller: _notesController,
@@ -184,7 +231,7 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () => _navigateToDashboard(context),
+                    onPressed: _navigateToDashboard,
                     child: const Text('SKIP', style: TextStyle(color: Colors.white38, fontSize: 14)),
                   ),
                   const SizedBox(width: 16),
@@ -235,7 +282,7 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () => _navigateToDashboard(context),
+                onPressed: _navigateToDashboard,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: gold,
                   foregroundColor: Colors.black,
