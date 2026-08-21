@@ -124,18 +124,34 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   ),
               ],
             ),
-            if (widget.record.roleTag != null && widget.record.roleTag!.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: gold.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  widget.record.roleTag!.toUpperCase(),
-                  style: const TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8),
+            if (widget.record.role != null || widget.record.scene != null || (widget.record.roleTag != null && widget.record.roleTag!.isNotEmpty))
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    if (widget.record.role != null && widget.record.role!.isNotEmpty)
+                      Chip(
+                        label: Text(widget.record.role!, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w600)),
+                        backgroundColor: gold,
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      )
+                    else if (widget.record.roleTag != null && widget.record.roleTag!.isNotEmpty)
+                      Chip(
+                        label: Text(widget.record.roleTag!, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w600)),
+                        backgroundColor: gold,
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    if (widget.record.scene != null && widget.record.scene!.isNotEmpty)
+                      Chip(
+                        label: Text(widget.record.scene!, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        backgroundColor: const Color(0xFF1A1A1A),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                  ],
                 ),
               ),
             const SizedBox(height: 24),

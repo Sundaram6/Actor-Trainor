@@ -21,6 +21,8 @@ class SessionRecords extends Table {
   TextColumn get intention => text().nullable()();
   IntColumn get qualityRating => integer().nullable()();
   TextColumn get roleTag => text().nullable()();
+  TextColumn get role => text().nullable()();
+  TextColumn get scene => text().nullable()();
 }
 
 class DailyProgress extends Table {
@@ -70,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -107,6 +109,10 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 10) {
             await m.addColumn(sessionRecords, sessionRecords.roleTag);
+          }
+          if (from < 11) {
+            await m.addColumn(sessionRecords, sessionRecords.role);
+            await m.addColumn(sessionRecords, sessionRecords.scene);
           }
         },
       );

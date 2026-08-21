@@ -19,6 +19,8 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
   final String? notes;
   final int? sessionRecordId;
   final int? streak;
+  final String? role;
+  final String? scene;
 
   const SessionCompletionScreen({
     super.key,
@@ -29,6 +31,8 @@ class SessionCompletionScreen extends ConsumerStatefulWidget {
     this.notes,
     this.sessionRecordId,
     this.streak,
+    this.role,
+    this.scene,
   });
 
   @override
@@ -174,6 +178,15 @@ class _SessionCompletionScreenState extends ConsumerState<SessionCompletionScree
                 label: 'Status',
                 value: 'Closed',
               ),
+              if (widget.role != null || widget.scene != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    '${widget.role != null ? 'Role: ${widget.role}' : ''}${widget.role != null && widget.scene != null ? '  •  ' : ''}${widget.scene != null ? 'Scene: ${widget.scene}' : ''}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               const SizedBox(height: 24),
 
               // 5-Star Session Quality Rating

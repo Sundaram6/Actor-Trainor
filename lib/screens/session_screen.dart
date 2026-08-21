@@ -15,6 +15,7 @@ import '../widgets/breathing_guide.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/session_state_service.dart';
 import '../widgets/notes_bottom_sheet.dart';
+import '../widgets/role_scene_dialog.dart';
 import '../widgets/skip_reason_bottom_sheet.dart';
 import 'session_completion_screen.dart';
 import 'settings_screen.dart';
@@ -541,14 +542,22 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
                         .where((e) => _blockOutcomes[e.key] == 'completed')
                         .fold<int>(0, (sum, e) => sum + e.value.durationMinutes);
 
+                    final role = ref.read(roleProvider) ?? widget.roleTag;
+                    final scene = ref.read(sceneProvider);
+
                     final insertedId = await db.insertSessionRecord(SessionRecordsCompanion(
                       completedAt: drift.Value(now),
                       blocksCompleted: drift.Value(completedBlocks),
                       totalMinutes: drift.Value(loggedMins),
                       blocksJson: drift.Value(jsonEncode(blocksData)),
                       intention: drift.Value(_sessionIntention),
-                      roleTag: drift.Value(widget.roleTag?.isNotEmpty == true ? widget.roleTag : null),
+                      roleTag: drift.Value(role),
+                      role: drift.Value(role),
+                      scene: drift.Value(scene),
                     ));
+
+                    ref.read(roleProvider.notifier).state = null;
+                    ref.read(sceneProvider.notifier).state = null;
 
                     if (widget.initialEnergy != null &&
                         widget.initialFocus != null &&
@@ -856,6 +865,9 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       return _blockOutcomes[i];
     });
 
+    final role = ref.read(roleProvider) ?? widget.roleTag;
+    final scene = ref.read(sceneProvider);
+
     final insertedId = await db.insertSessionRecord(SessionRecordsCompanion(
       completedAt: drift.Value(now),
       blocksCompleted: drift.Value(completedBlocksCount),
@@ -863,8 +875,13 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
       blocksJson: drift.Value(jsonEncode(blocksData)),
       intention: drift.Value(_sessionIntention),
       notes: drift.Value(notes),
-      roleTag: drift.Value(widget.roleTag?.isNotEmpty == true ? widget.roleTag : null),
+      roleTag: drift.Value(role),
+      role: drift.Value(role),
+      scene: drift.Value(scene),
     ));
+
+    ref.read(roleProvider.notifier).state = null;
+    ref.read(sceneProvider.notifier).state = null;
 
     if (widget.initialEnergy != null &&
         widget.initialFocus != null &&
@@ -907,6 +924,8 @@ class _SessionScreenState extends ConsumerState<SessionScreen>
             notes: notes,
             sessionRecordId: insertedId,
             streak: updatedStreak,
+            role: role,
+            scene: scene,
           ),
         ),
         (route) => route.isFirst,

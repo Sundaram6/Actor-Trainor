@@ -22,6 +22,7 @@ import 'package:the_instrument/screens/session_screen.dart';
 import 'package:the_instrument/screens/today_screen.dart';
 import 'package:the_instrument/services/notification_service.dart';
 import 'package:the_instrument/services/sound_service.dart';
+import 'package:the_instrument/widgets/role_scene_dialog.dart';
 import 'package:the_instrument/widgets/skip_reason_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -589,6 +590,88 @@ void main() {
     expect(find.byIcon(Icons.theaters_outlined), findsOneWidget);
     expect(find.textContaining('Role or scene'), findsOneWidget);
     await captureBoundary(tester, rootKey, 'checkin_role_tag.png');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('RoleSceneDialog renders with role and scene fields', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: Scaffold(
+            backgroundColor: const Color(0xFF0A0A0A),
+            body: Center(
+              child: RoleSceneDialog(onStart: () {}),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tag This Session'), findsOneWidget);
+    expect(find.text('Role / Character'), findsOneWidget);
+    expect(find.text('Scene / Project'), findsOneWidget);
+    expect(find.text('SKIP'), findsOneWidget);
+    expect(find.text('START SESSION'), findsOneWidget);
+    await captureBoundary(tester, rootKey, 'role_scene_dialog.png');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('ProgressScreen shows role and scene chips', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GlobalKey rootKey = GlobalKey();
+
+    await testDb.insertSessionRecord(
+      SessionRecordsCompanion.insert(
+        completedAt: DateTime.now(),
+        blocksCompleted: 9,
+        totalMinutes: 112,
+        role: const Value('Hamlet'),
+        scene: const Value('Gravedigger Scene'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
+        child: MaterialApp(
+          title: appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: appTheme,
+          builder: (context, child) => RepaintBoundary(
+            key: rootKey,
+            child: child ?? const SizedBox(),
+          ),
+          home: const ProgressScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hamlet'), findsWidgets);
+    expect(find.text('Gravedigger Scene'), findsWidgets);
+    await captureBoundary(tester, rootKey, 'progress_role_scene_chips.png');
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
   });

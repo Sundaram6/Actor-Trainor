@@ -214,26 +214,34 @@ class ProgressScreen extends ConsumerWidget {
                                   fontSize: 13,
                                 ),
                               ),
-                              if (session.roleTag != null && session.roleTag!.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1A1A1A),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
-                                    ),
-                                    child: Text(
-                                      session.roleTag!.toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Color(0xFFD4AF37),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
+                              if (session.role != null || session.scene != null || (session.roleTag != null && session.roleTag!.isNotEmpty)) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      if (session.role != null && session.role!.isNotEmpty)
+                                        Chip(
+                                          label: Text(session.role!, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w600)),
+                                          backgroundColor: const Color(0xFFD4AF37),
+                                          padding: EdgeInsets.zero,
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        )
+                                      else if (session.roleTag != null && session.roleTag!.isNotEmpty)
+                                        Chip(
+                                          label: Text(session.roleTag!, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w600)),
+                                          backgroundColor: const Color(0xFFD4AF37),
+                                          padding: EdgeInsets.zero,
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                      if (session.scene != null && session.scene!.isNotEmpty)
+                                        Chip(
+                                          label: Text(session.scene!, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                          backgroundColor: const Color(0xFF1A1A1A),
+                                          padding: EdgeInsets.zero,
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ],

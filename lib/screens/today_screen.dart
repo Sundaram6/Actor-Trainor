@@ -6,6 +6,7 @@ import '../providers/today_provider.dart';
 import '../providers/weekly_goals_provider.dart';
 import '../services/widget_service.dart';
 import '../widgets/intention_bottom_sheet.dart';
+import '../widgets/role_scene_dialog.dart';
 import 'checkin_screen.dart';
 import 'evening_load_screen.dart';
 import 'journal_screen.dart';
@@ -338,10 +339,19 @@ class TodayScreen extends ConsumerWidget {
 
                       if (!context.mounted) return;
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CheckInScreen(intention: intention ?? ''),
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (dialogCtx) => RoleSceneDialog(
+                          onStart: () {
+                            Navigator.pop(dialogCtx);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CheckInScreen(intention: intention ?? ''),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
